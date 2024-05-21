@@ -1,0 +1,196 @@
+/*
+To change this license header, choose License Headers in Project Properties.
+To change this template file, choose Tools | Templates
+and open the template in the editor.
+*/
+/*
+    Created on : Jul 27, 2015, 4:30:56 PM
+    Author     : mayur
+*/
+
+.edit{
+/*    padding: 5px 6px;
+    border: 1px solid #008d4c;
+*/
+    color: #008d4c;
+}
+.complain {
+    border: 1px solid #337ab7;
+    color: #008d4c;
+    padding: 5px 20px 5px 7px;
+    display: inline-block;
+}
+.edit:hover, .edit:active{
+    border: 1px solid #00a65a;
+    color: #00a65a;
+}
+.delete{
+    padding: 5px 6px;
+    border: 1px solid #d33724;
+    color: #d33724;
+}
+.delete:hover, .delete:active{
+    border: 1px solid #f56954;
+    color: #f56954;
+}
+.chat-discussion{
+    padding: 5px 20px 5px 7px;
+    border: 1px solid #337ab7;
+    color: #337ab7;
+}
+ .mt20 { margin-top: 20px};
+ .mb20 { margin-bottom: 20px;}
+
+ .t_align_center { text-align: center;}
+
+ #ConfirmAlert .modal-content{
+    border-radius: 5px;
+}
+ .alert_warning{
+    color: #FF0000;
+}
+.alert_border_warning{
+    border-color: #FF0000;
+}
+.alert_success{
+    color: #00a65a;
+}
+.alert_border_success{
+    border-color: #00a65a;
+}
+.alert_information{
+    color: #00c0ef;
+}
+.alert_border_information{
+    border-color: #00c0ef;
+}
+
+/* pagination */
+.per_page_block{
+    float: right;
+    margin: 20px 0 20px 15px;
+}
+.per_page_block .per_page{
+    float: left;
+    width: 80px;
+}
+.per_page_block .lbl_per_page{
+    float: left;
+    margin-left: 8px;
+    margin-top: 6px;
+}
+.go_to_block{
+    float: right;
+    margin: 20px 0 20px 15px;
+}
+.go_to_block .go_text{
+    width: 50px;
+    float: left;
+    margin-right: 5px;
+}
+#sbtGoToPage{
+    float: left;
+}
+.pagination
+{
+    float: right;
+}
+
+.model-course-help { display: flex; margin-bottom: 10px; }
+
+.process_Yes, .process_Pass { color: green;}
+.process_No,.process_Fail { color: red;}
+
+
+.table-hover > tbody > tr:hover {
+    background-color: #eee;
+    /* // #bdb9b9; */
+}
+
+.receipt_text
+{
+  text-decoration:underline; font-weight:bold; font-style:italic;
+}
+
+.remove_print_button { margin-right: 20px;}
+.mb5 { margin-bottom: 5px;  }
+
+#m_process {
+    position: fixed;
+    top: 50%;
+    margin: 0px;
+    z-index: 1;
+    border: 0px;
+    box-shadow: none;
+    text-align: center;
+    /* color: #000; */
+}
+.preloader-overlay {
+    background-color: #fff;
+    opacity: 0.5;
+    position: fixed;
+    height: 100%;
+    width: 100%;
+    z-index: 1;
+    top: 0px;
+    bottom: 0px;
+    left: 0px;
+    right: 0px;
+    
+}
+
+.pagination > li > a, .pagination > li > span { float: right;}
+
+
+.row_overlay  { 
+    position: relative;
+}
+.row_overlay::after {
+    display: block;
+    content: "";
+    height: 100%;
+    width: calc(100% - 40px);
+    background: rgba(147, 147, 147, 0.1);
+    position: absolute;
+    top: 0;
+}
+
+.c_1_month
+{
+    color:blue;
+}
+
+.c_3_month
+{
+    color:orange;
+}
+
+#lbl_result_status { font-size: 16px; font-weight: bold;  }
+
+.finalized_Y { color:green; font-weight: bold; }
+
+/*	Darshana
+==================================================*/ 
+.form-control.ma-input-control {
+    background-color: #ffffff;
+}
+.add-more-btn {
+    padding: 4px 8px;
+    font-size: 12px;
+}
+.select2-dropdown.ma-select2-dropdown {
+    z-index: 999;
+}
+.ma-select2-addbtn {
+    width: 100%;
+    margin-top: 5px;
+}
+.ma-btn-wrap {
+    text-align: right;
+    margin-bottom: 10px;
+}
+.ma-btn-disable {
+    opacity: 0.4;
+    pointer-events: none;
+    cursor: progress;
+}

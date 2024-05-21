@@ -1,0 +1,200 @@
+<div class="modal" id="add_student_exam_result_model">
+    <input type="hidden" id="d_stu_id" name="d_stu_id" />
+    <input type="hidden" id="d_exs_id" name="d_exs_id" />
+    <input type="hidden" id="d_stu_br_id" name="d_stu_br_id" />
+    <input type="hidden" id="d_title" name="d_title" />
+    <input type="hidden" id="d_exs_ex_id" name="d_exs_ex_id" />
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title">Add Result  [<span id="d_student_name"></span>]</h4>
+            </div>
+            <div class="modal-body">
+                <!-- start of showing details -->
+                <div class="box">
+                    <div class="box-body">
+                        <input type="hidden" id="db_exs_finalized" name="db_exs_finalized" value="" />
+                        <table id="example2" class="table table-bordered table-hover">
+                            <thead>
+                                <tr>
+                                    <th  >Category</th>
+                                    <th align="right">Marks</th>
+                                    <th align="right" >Obtain Marks</th>
+                                </tr>
+                            </thead>
+                            <tbody id="student_exam_tbody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <!-- end of showing details -->
+                <!-- start of code -->
+
+
+                <!-- end of code -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default pull-left" data-dismiss="modal">Close</button>
+                <button type="button" onclick="add_student_exam_result_ajax('save-result-only');" class="btn btn-primary confirm-class">Save Marks</button>
+
+                <button type="button" id="btn_finalized" onclick="add_student_exam_result_ajax('add-student-exam-result-ajax');" class="btn btn-warning confirm-class">Finalised Result</button>
+                <!--  <button type="submit" onclick="pay_fee_student_exam_ajax();" class="btn btn-primary confirm-class">Pay Exam Fee</button> -->
+            </div>
+        </div><!-- /.modal-content -->
+    </div><!-- /.modal-dialog -->
+</div><!-- /.modal -->
+<script type="text/javascript" lang="javascript">
+    // this function will get exsting result details
+    function get_exam_result_details_data()
+    {
+        // $('#a_process_'+ei_id).remove();
+        $.ajax({
+            type: "POST",
+            async: "false",
+            url: "ajax.php",
+            data: {action: "get-student-exam-result", r_stu_id: $("#d_stu_id").val(), r_ex_id: $("#d_exs_ex_id").val(), r_stu_br_id: $("#d_stu_br_id").val()},
+            success: function (result) {
+                result = $.trim(result);
+
+                var objResponse = jQuery.parseJSON(result);
+                console.log(objResponse);
+                if (objResponse.status == 'success')
+                {
+                    if ($.trim(objResponse.exs_finalized) == 'Y')
+                    {
+                        $("#btn_finalized").remove();
+                    }
+                    // now bidning data to the table.
+                    $("#student_exam_tbody").html(objResponse.data);
+                    //    $('#course_details').modal('hide');
+                    //    $('#form1').submit();
+                } else
+                {
+                    alert(objResponse.errormsg);
+                }
+            }
+        });
+    }
+
+    // first function that call from page that will set data and values
+    function add_student_exam_result(d_exs_ex_id, d_stu_id, d_exs_id, d_stu_br_id, d_title, d_student_name)
+    {
+        $('#d_exs_ex_id').val(d_exs_ex_id);
+        $('#d_stu_id').val(d_stu_id);
+        $('#d_exs_id').val(d_exs_id);
+        $('#d_stu_br_id').val(d_stu_br_id);
+        $('#d_student_name').text(d_student_name);
+        get_exam_result_details_data();
+        $('#add_student_exam_result_model').modal('show');
+    }
+
+
+    function update_marks_total()
+    {
+        console.log("called total function");
+        var d_total_marks_obtain = 0;
+        $('.mstudentresult').each(
+                function () {
+                    d_total_marks_obtain += parseInt($(this).val());
+                }
+        );
+
+        $("#total_marks_obtain").val(d_total_marks_obtain);
+
+        if ((d_total_marks_obtain / parseInt($("#total_marks").val())) * 100 < 70) {
+            $("#lbl_result_status").removeAttr("style");
+            $("#lbl_result_status").attr("class", "text-danger");
+            $("#lbl_result_status").text("Fail");
+        } else {
+            $("#lbl_result_status").removeAttr("style");
+            $("#lbl_result_status").attr("class", "text-success");
+            $("#lbl_result_status").text("Pass");
+        }
+    }
+
+    function add_student_exam_result_ajax(action)
+    {
+
+        var data = {};
+        var process_id = "";
+        data["action"] = action;
+        data["total_marks"] = $("#total_marks").val();
+        data["next_course"] = $("#next_course").val();
+        // start code to validate data
+        var dontsubmitform = 0;
+        $('#student_exam_tbody tr').each(function () {
+            if ((isNaN($(this).find("#exre_total_marks_actual").text()) == true) && (isNaN($(this).find("#exre_total_marks_obtain").val()) == false))
+            {
+                alert("Obtain marks must be the number");
+                return false;
+            }
+
+            if (parseInt($(this).find("#exre_total_marks_obtain").val()) > parseInt($(this).find("#exre_total_marks_actual").text()))
+            {
+                console.log($(this).find("#exre_total_marks_actual").text() + "***" + $(this).find("#exre_total_marks_obtain").val());
+                dontsubmitform = 1;
+                $(this).find("#exre_total_marks_obtain").focus();
+                alert("Obtain marks can not be more then total marks");
+                return false;
+            }
+        });
+
+// end of code to validate data
+
+        if (dontsubmitform == 0)
+        {
+
+
+            $('.mstudentresult').each(
+                    function () {
+                        data[$(this).attr("name")] = $(this).val();
+                        process_id = process_id + $(this).attr("name") + "####";
+                        console.log("Name" + $(this).attr("name") + "value" + $(this).val());
+                    }
+            );
+            data["process_id"] = process_id;
+            data["ex_date_d"] = $("#ex_date_d").val();
+            data["sc_half_course_f"] = $("#sc_half_course_f").val();
+            data["sc_brt_id_f"] = $("#sc_brt_id_f").val();
+            data["stu_batchtime_f"] = $("#stu_batchtime_f").val();
+            data["sc_course_type"] = $("#sc_course_type").val();
+            
+
+            if (action=='add-student-exam-result-ajax') 
+            {
+                var ans_v = confirm("Are you sure you would like to process?\nResult Status: "+$("#lbl_result_status").text()+"\nNext Course & Re examination: "+$("#next_course").val()+"\nBatch Type: "+$("#sc_brt_id_f option:selected").html()+"\nBatch Time: "+$("#stu_batchtime_f option:selected").html()+"\nPayment Terms: "+$("#sc_course_type option:selected").html());
+            }   
+            else
+            {
+                var ans_v = confirm("Are you sure you would like to process?");
+            }    
+            
+            if (ans_v == true)
+            {
+
+                $.ajax({
+                    type: "POST",
+                    url: "ajax.php",
+                    data: data,
+                    success: function (result) {
+                        result = $.trim(result);
+
+                        var objResponse = jQuery.parseJSON(result);
+                        if (objResponse.status == 'success')
+                        {
+                            alert("Result has been added successfully.");
+                            $('#add_student_exam_result_model').modal('hide');
+                            $("#act").val("act");
+                            $("#addresult").val(1);
+                            $('#form_enrollment').submit();
+                        } else
+                        {
+                            alert(objResponse.errormsg);
+                        }
+                    }
+                });
+            }
+        }
+    }
+</script>

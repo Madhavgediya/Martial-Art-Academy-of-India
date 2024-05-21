@@ -1,0 +1,4 @@
+Log action details.
+add_student
+add_course_to_student
+student_course_removal

@@ -1,0 +1,1439 @@
+<?php
+include_once("send-mail.php");
+/**
+ * Get random generated string
+ *
+ * Returns random string with given length
+ *
+ * @access	public
+ * @return	string
+ * @param	int
+ */
+if (!function_exists("randomPrefix")) {
+
+    function randomPrefix($length) {
+        $random = "";
+
+        srand((double) microtime() * 1000000);
+
+        $data = "AbcDE123IJKLMN67QRSTUVWXYZ";
+        $data .= "aBCdefghijklmn123opq45rs67tuv89wxyz";
+        $data .= "0FGH45OP89";
+
+        for ($i = 0; $i < $length; $i++) {
+            $random .= substr($data, (rand() % (strlen($data))), 1);
+        }
+        $random = strtoupper($random);
+        return $random;
+    }
+
+}
+
+/**
+ * Get the requested data
+ *
+ *
+ * @access	public
+ * @return	string
+ * @param	string
+ */
+if (!function_exists("get_rdata")) {
+
+    function get_rdata($VarName, $Default = "") { /// proocess input variables;
+        $InputPro = '';
+        if (isset($_REQUEST[$VarName]) && is_array($_REQUEST[$VarName])) {
+            $InputPro = $_REQUEST[$VarName];
+            foreach ($InputPro as $key => $val) {
+                $InputPro[$key] = trim($val);
+            }
+        } else if (isset($_REQUEST[$VarName]) && !is_array($_REQUEST[$VarName])) {
+            $InputPro = trim($_REQUEST[$VarName]);
+        } else {
+            $InputPro = trim($Default);
+        }
+        return $InputPro;
+    }
+
+}
+
+function InputPro($VarName, $Default = "") { /// proocess input variables;
+    if (isset($_REQUEST[$VarName]) && is_array($_REQUEST[$VarName])) {
+        $InputPro = $_REQUEST[$VarName];
+        foreach ($InputPro as $key => $val) {
+            $InputPro[$key] = addslashes(trim($val));
+        }
+    } else if (isset($_REQUEST[$VarName]) && !is_array($_REQUEST[$VarName])) {
+        $InputPro = addslashes(trim($_REQUEST[$VarName]));
+    } else {
+        $InputPro = addslashes(trim($Default));
+    }
+    return $InputPro;
+}
+
+/**
+ * For check that the checkbox is selected or not.
+ *
+ * @access	public
+ * @return	the checkbox is checked or not.
+ * @param	string/int and string/int
+ */
+if (!function_exists("set_checked")) {
+
+    function set_checked($value1, $value2) {
+        if ($value1 == $value2) {
+            return 'checked = "checked"';
+        }
+    }
+
+}
+
+/**
+ * For check that the combobox is selected or not.
+ *
+ * @access	public
+ * @return	the combobox is selected or not.
+ * @param	string/int and string/int
+ */
+if (!function_exists("set_selected")) {
+
+    function set_selected($value1, $value2) {
+        if ($value1 == $value2) {
+            return 'selected = "selected"';
+        }
+    }
+
+}
+
+/**
+ * For insert the log data.
+ *
+ * @access	public
+ * @return	success if inserted successfully.
+ * @param	needed data which are you insert in log.
+ */
+if (!function_exists("add_log")) {
+
+    //function add_log($log_action, $log_user_id, $log_user_type, $log_admin_id, $log_remarks) {
+    function add_log($log_action, $log_user_id, $log_admin_id, $log_remarks) {
+        $log_master = new log_master();
+        $log_master->data['log_action'] = $log_action;
+        $log_master->data['log_user_id'] = $log_user_id;
+        //$log_master->data['log_user_type'] = $log_user_type;
+        $log_master->data['log_admin_id'] = $log_admin_id;
+        $log_master->data['log_remarks'] = $log_remarks;
+        $log_master->data['log_date'] = date('Y-m-d');
+        $log_master->action = 'insert';
+        $log_master->process();
+    }
+
+}
+
+/**
+ * This function takes a path to a file to output ($file),
+ * the filename that the browser will see ($name) and  the MIME type of the file ($mime_type, optional).
+ * @access	public
+ * @return
+ * @param
+ */
+if (!function_exists("output_file")) {
+
+    function output_file($file, $name, $mime_type = '', $file_actual_name) {
+        //Check the file premission
+        if (!is_readable($file))
+            die('File not found or inaccessible!');
+
+        $size = filesize($file);
+        $name = rawurldecode($name);
+
+        /* Figure out the MIME type | Check in array */
+        $known_mime_types = array(
+            "pdf" => "application/pdf",
+            "txt" => "text/plain",
+            "html" => "text/html",
+            "htm" => "text/html",
+            "exe" => "application/octet-stream",
+            "zip" => "application/zip",
+            "doc" => "application/msword",
+            "xls" => "application/vnd.ms-excel",
+            "ppt" => "application/vnd.ms-powerpoint",
+            "gif" => "image/gif",
+            "png" => "image/png",
+            "jpeg" => "image/jpg",
+            "jpg" => "image/jpg",
+            "php" => "text/plain"
+        );
+
+        if ($mime_type == '') {
+            $file_extension = strtolower(substr(strrchr($file, "."), 1));
+            if (array_key_exists($file_extension, $known_mime_types)) {
+                $mime_type = $known_mime_types[$file_extension];
+            } else {
+                $mime_type = "application/force-download";
+            };
+        };
+
+        //turn off output buffering to decrease cpu usage
+        @ob_end_clean();
+
+        // required for IE, otherwise Content-Disposition may be ignored
+        if (ini_get('zlib.output_compression'))
+            ini_set('zlib.output_compression', 'Off');
+
+        header('Content-Type:application/octet-stream');
+        header('Content-Disposition: attachment; filename="' . $file_actual_name . '"'); //
+        header("Content-Transfer-Encoding: binary");
+        header('Accept-Ranges: bytes');
+
+        /* The three lines below basically make the
+          download non-cacheable */
+        header("Cache-control: Public");
+        header('Pragma: no-cache');
+        header("Expires: Mon, 26 Jul 1997 05:00:00 GMT");
+
+        // multipart-download and download resuming support
+        if (isset($_SERVER['HTTP_RANGE'])) {
+            list($a, $range) = explode("=", $_SERVER['HTTP_RANGE'], 2);
+            list($range) = explode(",", $range, 2);
+            list($range, $range_end) = explode("-", $range);
+            $range = intval($range);
+            if (!$range_end) {
+                $range_end = $size - 1;
+            } else {
+                $range_end = intval($range_end);
+            }
+            /*
+              ------------------------------------------------------------------------------------------------------
+              //This application is developed by www.webinfopedia.com
+              //visit www.webinfopedia.com for PHP,Mysql,html5 and Designing tutorials for FREE!!!
+              ------------------------------------------------------------------------------------------------------
+             */
+            $new_length = $range_end - $range + 1;
+            header("HTTP/1.1 206 Partial Content");
+            header("Content-Length: $new_length");
+            header("Content-Range: bytes $range-$range_end/$size");
+        } else {
+            $new_length = $size;
+            header("Content-Length: " . $size);
+        }
+
+        /* Will output the file itself */
+        $chunksize = 1 * (1024 * 1024); //you may want to change this
+        $bytes_send = 0;
+        if ($file = fopen($file, 'r')) {
+            if (isset($_SERVER['HTTP_RANGE']))
+                fseek($file, $range);
+
+            while (!feof($file) && (!connection_aborted()) && ($bytes_send < $new_length)) {
+                $buffer = fread($file, $chunksize);
+                print($buffer); //echo($buffer); // can also possible
+                flush();
+                $bytes_send += strlen($buffer);
+            }
+            fclose($file);
+        } else
+        //If no permissiion
+            die('Error - can not open file.');
+        //die
+        die();
+    }
+
+}
+
+function m_process($action, $query_a) {
+    global $dbh, $c_file;
+    // fetchAll()
+    $dbh->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    $dbh->beginTransaction();
+    if ($action == 'get_data') {
+        try {
+            $sth1 = $dbh->prepare($query_a);
+            $sth1->execute();
+            $dbh->commit();
+            $result = array("errormsg" => "", "id" => 0, "status" => "success", "res" => $sth1->fetchAll(PDO::FETCH_ASSOC), "count" => $sth1->rowCount());
+        } catch (Exception $e) {
+            $dbh->rollBack();
+            $result = array("errormsg" => $e->getMessage(), "status" => "error");
+        }
+    } else if ($action == 'insert') {
+        try {
+            $dbh->exec($query_a);
+            $result = array("errormsg" => "", "id" => $dbh->lastInsertId(), "status" => "success");
+            $dbh->commit();
+        } catch (Exception $e) {
+            $dbh->rollBack();
+            $result = array("errormsg" => $e->getMessage(), "status" => "error");
+        }
+    } else if ($action == 'update') {
+        try {
+            $dbh->exec($query_a);
+            $result = array("errormsg" => "", "id" => 0, "status" => "success");
+            $dbh->commit();
+        } catch (Exception $e) {
+            $dbh->rollBack();
+            $result = array("errormsg" => $e->getMessage(), "status" => "error");
+        }
+    } else if ($action == 'delete') {
+        try {
+            $dbh->exec($query_a);
+            $result = array("errormsg" => "", "id" => 0, "status" => "success");
+            $dbh->commit();
+        } catch (Exception $e) {
+            $dbh->rollBack();
+            $result = array("errormsg" => $e->getMessage(), "status" => "error");
+        }
+    }
+    if (IS_LOCAL == TRUE) {
+        add_log_txt($c_file.'--'. $query_a);
+    }
+    //  add_log_txt($query_a);
+    return $result;
+}
+
+function found_duplicate($table, $filed, $filed_value, $not_value = "") {
+    $arr_retun = array();
+    $arr_retun['error_message'] = '';
+    $arr_retun['duplicate'] = false;
+    $q = "SELECT count(*) as count_s FROM " . $table . " WHERE " . $filed . " = '" . $filed_value . "' " . $not_value;
+    $result = m_process("get_data", $q);
+
+    if ($result['errormsg'] != '') {
+        $arr_retun['error_message'] = $result['errormsg'];
+    } else {
+        if ($result['count'] > 0) {
+            if ($result['res'][0]['count_s'] > 0) {
+                $arr_retun['duplicate'] = true;
+            } else {
+                $arr_retun['duplicate'] = false;
+            }
+        } else {
+            $arr_retun['error_message'] = 'no records found';
+        }
+    }
+    return $arr_retun;
+}
+
+function get_student_id_from_login_id($req_session_id) {
+    $arr_retun = array();
+    $arr_retun['error_message'] = '';
+    $arr_retun['id'] = 0;
+    $q = "SELECT lo_access_id FROM sm_login WHERE lo_id= " . $req_session_id;
+    $result = m_process("get_data", $q);
+
+    if ($result['errormsg'] != '') {
+        $arr_retun['error_message'] = $result['errormsg'];
+    } else {
+        if ($result['count'] > 0) {
+            $arr_retun['id'] = $result['res'][0]['lo_access_id'];
+        } else {
+            $arr_retun['error_message'] = 'no records found';
+        }
+    }
+    return $arr_retun;
+}
+
+function get_standard($sc_id, $st_status, $select_value) {
+    $arr_retun = array();
+    $arr_retun['error_message'] = '';
+    $arr_retun['id'] = 0;
+    $q = "SELECT std_name ,std_id  FROM sm_standard  WHERE std_sc_id= " . $sc_id . " AND (std_status = '" . $st_status . "' OR '" . $st_status . "'='' )";
+    // echo $q;
+    $result = m_process("get_data", $q);
+    if ($result['errormsg'] != '') {
+        $arr_retun['error_message'] = $result['errormsg'];
+    } else {
+        if ($result['count'] > 0) {
+            foreach ($result['res'] as $db_row) {
+                if ($select_value == $db_row["std_id"]) {
+                    echo '<option value="' . $db_row["std_id"] . '" selected="selected">' . $db_row["std_name"] . '</option>';
+                } else {
+                    echo '<option value="' . $db_row["std_id"] . '">' . $db_row["std_name"] . '</option>';
+                }
+            }
+        }
+    }
+}
+
+/*
+
+ */
+
+// $data_arr_input['select_field']
+// $data_arr_input['table']
+// $data_arr_input['where']
+// $data_arr_input['key_id']
+// $data_arr_input['key_name']
+// $data_arr_input['order_by']
+function display_dd_options($data_arr_input) {
+    $order_by = "";
+    if (isset($data_arr_input["order_by"]) && $data_arr_input["order_by"] != '') {
+        $order_by = $data_arr_input["order_by"];
+    } else {
+        $order_by = $data_arr_input['key_name'];
+    }
+    $arr_retun = array();
+    $arr_retun['error_message'] = '';
+    $arr_retun['id'] = 0;
+    $q = "SELECT " . $data_arr_input['select_field'] . "  FROM " . $data_arr_input['table'];
+    if ($data_arr_input['where'] != '') {
+        $q .= " WHERE " . $data_arr_input['where'];
+    }
+    $q .= " ORDER BY " . $order_by;
+    //exit(0);
+    // echo $q;
+    $result = m_process("get_data", $q);
+    if ($result['errormsg'] != '') {
+        $arr_retun['error_message'] = $result['errormsg'];
+    } else {
+        if ($result['count'] > 0) {
+            foreach ($result['res'] as $db_row) {
+                if ($data_arr_input['current_selection_value'] == $db_row[$data_arr_input['key_id']]) {
+                    echo '<option value="' . $db_row[$data_arr_input['key_id']] . '" selected="selected">' . $db_row[$data_arr_input['key_name']] . '</option>';
+                } else {
+                    echo '<option value="' . $db_row[$data_arr_input['key_id']] . '">' . $db_row[$data_arr_input['key_name']] . '</option>';
+                }
+            }
+        }
+    }
+}
+
+// $data_arr_input['select_field']
+// $data_arr_input['consider'] = value or key
+// data_array
+// current_selection_value
+function display_dd_options_from_array($data_arr_input) {
+    if (count($data_arr_input['data_array']) > 0) {
+        foreach ($data_arr_input['data_array'] as $array_row_key => $array_row_value) {
+            if ($data_arr_input['consider'] == 'key') {
+                if ($data_arr_input['current_selection_value'] == $array_row_key) {
+                    echo '<option value="' . $array_row_key . '" selected="selected">' . $array_row_value . '</option>';
+                } else {
+                    echo '<option value="' . $array_row_key . '">' . $array_row_value . '</option>';
+                }
+            } else {
+                if ($data_arr_input['current_selection_value'] == $array_row_value) {
+                    echo '<option value="' . $array_row_value . '" selected="selected">' . $array_row_value . '</option>';
+                } else {
+                    echo '<option value="' . $array_row_value . '">' . $array_row_value . '</option>';
+                }
+            }
+        }
+    }
+}
+
+function convert_disp_to_db_date($input_date) {
+    // $input_date = 12/08/2015
+    $arr_date = explode("-", $input_date);
+    return $arr_date[2] . "-" . $arr_date[1] . "-" . $arr_date[0];
+}
+
+function convert_db_to_disp_date($input_date) {
+    // $input_date = 2015/08/29
+    // echo $input_date;
+    $arr_date = explode("-", $input_date);
+    return $arr_date[2] . "-" . $arr_date[1] . "-" . $arr_date[0];
+}
+
+function add_log_txt($somecontent) {
+    $filename = 'qlog.sql';
+    $somecontent = date("d-m-y-h:m:s"). ' '. $somecontent . "\n\n";
+    if (is_writable($filename)) {
+        if (!$handle = fopen($filename, 'a')) {
+            exit;
+        }
+        if (fwrite($handle, $somecontent) === FALSE) {
+            exit;
+        }
+        fclose($handle);
+    }
+}
+
+function validate_before_delete($table, $where = "") {
+    $arr_retun = array();
+    $arr_retun['error_message'] = '';
+    $arr_retun['found_reference'] = false;
+    $q = "SELECT 1 FROM " . $table . " WHERE  " . $where;
+    $result = m_process("get_data", $q);
+
+    if ($result['errormsg'] != '') {
+        $arr_retun['error_message'] = $result['errormsg'];
+    } else {
+        if ($result['count'] > 0) {
+            $arr_retun['found_reference'] = true;
+        } else {
+            $arr_retun['found_reference'] = false;
+        }
+    }
+    return $arr_retun;
+}
+
+function add_gcm_notification($arr_data) {
+    if ((!isset($arr_data["condition"])) || (isset($arr_data["condition"]) && $arr_data["condition"] == "" )) {
+        $q = "INSERT INTO sm_gcm_process(gcmp_gcm_gcm_id,	gcmp_not_id, gcmp_gcm_sc_id, gcmp_gcm_stu_id, gcmp_message, gcmp_title, gcmp_subtitle, gcmp_tickerText, gcmp_status, gcmp_create_by, gcmp_create_date,gcmp_goToScreen,gcmp_school) ";
+        $q .= " SELECT g.gcm_gcm_id , sm.sc_id,s.stu_id ,  " . $arr_data["gcmp_not_id"] . ",' " . $arr_data["gcmp_message"] . "', '" . $arr_data["gcmp_title"] . "', '" . $arr_data["gcmp_subtitle"] . "', '" . $arr_data["gcmp_tickerText"] . "',  'Y', '" . $arr_data["gcmp_create_by"] . "', '" . $arr_data["gcmp_create_date"] . "', '" . $arr_data["gcmp_goToScreen"] . "' , sm.sc_name  FROM sm_gcm g ";
+        $q .= " INNER JOIN sm_school_master sm ON (g.gcm_sc_id=sm.sc_id) ";
+        $q .= " INNER JOIN sm_student s ON (s.stu_sc_id=sm.sc_id) ";
+        $q .= " INNER JOIN sm_login lo  ON (lo.lo_access_id = s.stu_id)  ";
+        $q .= " WHERE g.gcm_sc_id = " . $arr_data["gcmp_gcm_sc_id"] . " AND s.stu_status = 'A' ";
+    } else if (isset($arr_data["condition"]) && $arr_data["condition"] == "timetable") {
+        $q = "INSERT INTO sm_gcm_process(gcmp_gcm_gcm_id, gcmp_not_id, gcmp_gcm_sc_id, gcmp_gcm_stu_id, gcmp_message, gcmp_title, gcmp_subtitle, gcmp_tickerText, gcmp_status, gcmp_create_by,  gcmp_create_date,gcmp_goToScreen,gcmp_school) ";
+        $q .= " SELECT g.gcm_gcm_id , sm.sc_id,s.stu_id ,  " . $arr_data["gcmp_not_id"] . ",' " . $arr_data["gcmp_message"] . "', '" . $arr_data["gcmp_title"] . "', '" . $arr_data["gcmp_subtitle"] . "', '" . $arr_data["gcmp_tickerText"] . "',  'Y', '" . $arr_data["gcmp_create_by"] . "', '" . $arr_data["gcmp_create_date"] . "', '" . $arr_data["gcmp_goToScreen"] . "' , sm.sc_name  FROM sm_gcm g ";
+        $q .= " INNER JOIN sm_school_master sm ON (g.gcm_sc_id=sm.sc_id) ";
+        $q .= " INNER JOIN sm_student s ON (s.stu_sc_id=sm.sc_id) ";
+        $q .= " INNER JOIN sm_login lo  ON (lo.lo_access_id = s.stu_id)  ";
+        $q .= " INNER JOIN sm_standard st  ON (	st.std_id = s.stu_std_id)  ";
+        $q .= " INNER JOIN sm_class c  ON (c.cl_id = s.stu_cl_id)  ";
+        $q .= " WHERE g.gcm_sc_id = " . $arr_data["gcmp_gcm_sc_id"] . " AND s.stu_status = 'A' AND st.std_id = " . $arr_data["std_id"] . " AND s.stu_medium = '" . $arr_data["medium"] . "' AND c.cl_id = " . $arr_data["cl_id"];
+    } else if (isset($arr_data["condition"]) && ($arr_data["condition"] == "result" || $arr_data["condition"] == "specialnotes")) {
+        $q = "INSERT INTO sm_gcm_process(gcmp_gcm_gcm_id,	gcmp_not_id, gcmp_gcm_sc_id, gcmp_gcm_stu_id, gcmp_message, gcmp_title, gcmp_subtitle, gcmp_tickerText, gcmp_status, gcmp_create_by, gcmp_create_date,gcmp_goToScreen,gcmp_school) ";
+        $q .= " SELECT g.gcm_gcm_id , sm.sc_id,s.stu_id ,  " . $arr_data["gcmp_not_id"] . ",' " . $arr_data["gcmp_message"] . "', '" . $arr_data["gcmp_title"] . "', '" . $arr_data["gcmp_subtitle"] . "', '" . $arr_data["gcmp_tickerText"] . "',  'Y', '" . $arr_data["gcmp_create_by"] . "', '" . $arr_data["gcmp_create_date"] . "', '" . $arr_data["gcmp_goToScreen"] . "' , sm.sc_name FROM sm_gcm g ";
+        $q .= " INNER JOIN sm_school_master sm ON (g.gcm_sc_id=sm.sc_id) ";
+        $q .= " INNER JOIN sm_student s ON (s.stu_sc_id=sm.sc_id) ";
+        $q .= " INNER JOIN sm_login lo  ON (lo.lo_access_id = s.stu_id)  ";
+        $q .= " WHERE g.gcm_sc_id = " . $arr_data["gcmp_gcm_sc_id"] . " AND s.stu_status = 'A' AND s.stu_id = " . $arr_data["stu_id"];
+    }
+
+    $result = m_process("insert", $q);
+
+    if ((!isset($arr_data["condition"])) || (isset($arr_data["condition"]) && $arr_data["condition"] == "" )) {
+        $process_school = 0;
+
+        if ($arr_data["gcmp_gcm_sc_id"] == 1) {
+            $process_school = 2;
+        } else if ($arr_data["gcmp_gcm_sc_id"] == 2) {
+            $process_school = 1;
+        }
+
+        if ($process_school != 0) {
+            $q = "INSERT INTO sm_gcm_process(gcmp_gcm_gcm_id,	gcmp_not_id, gcmp_gcm_sc_id, gcmp_gcm_stu_id, gcmp_message, gcmp_title, gcmp_subtitle, gcmp_tickerText, gcmp_status, gcmp_create_by, gcmp_create_date,gcmp_goToScreen,gcmp_school) ";
+            $q .= " SELECT g.gcm_gcm_id , sm.sc_id,s.stu_id ,  " . $arr_data["gcmp_not_id"] . ",' " . $arr_data["gcmp_message"] . "', '" . $arr_data["gcmp_title"] . "', '" . $arr_data["gcmp_subtitle"] . "', '" . $arr_data["gcmp_tickerText"] . "',  'Y', '" . $arr_data["gcmp_create_by"] . "', '" . $arr_data["gcmp_create_date"] . "', '" . $arr_data["gcmp_goToScreen"] . "' , sm.sc_name  FROM sm_gcm g LEFT JOIN sm_gcm_process gcp ON (gcp.gcmp_gcm_gcm_id = g.gcm_gcm_id ) ";
+            $q .= " INNER JOIN sm_school_master sm ON (g.gcm_sc_id=sm.sc_id) ";
+            $q .= " INNER JOIN sm_student s ON (s.stu_sc_id=sm.sc_id) ";
+            $q .= " INNER JOIN sm_login lo  ON (lo.lo_access_id = s.stu_id)  ";
+            $q .= " WHERE g.gcm_sc_id = " . $process_school . " AND s.stu_status = 'A' AND gcp.gcmp_id IS NULL ";
+            $result = m_process("insert", $q);
+        }
+        // process for school 2 and school 1
+    }
+
+
+
+    if ($result['errormsg'] != '') {
+        print_r($result['errormsg']);
+        // return $result['errormsg'];
+        exit(0);
+    }
+    add_gcm_notification_not_school($arr_data);
+    send_gcm();
+}
+
+function send_gcm() {
+    $update_ids = 0;
+    $gcmp_not_id = 0;
+    $q = "SELECT count(*),gcmp_not_id  FROM sm_gcm_process WHERE gcmp_status = 'Y'  GROUP BY  gcmp_not_id LIMIT 0,1";
+    $result = m_process("get_data", $q);
+    //echo $q;
+    $gcm_message = "";
+    $registrationId = array();
+    if ($result['errormsg'] != '') {
+        return $result['errormsg'];
+    } else {
+        if ($result["count"] > 0) {
+            $gcmp_not_id = $result["res"][0]["gcmp_not_id"];
+        } else {
+            return false;
+        }
+    }
+
+
+    $q = "SELECT gcmp.* FROM sm_gcm_process gcmp WHERE gcmp.gcmp_status = 'Y' AND  gcmp.gcmp_not_id = $gcmp_not_id LIMIT 0,50 ";
+    $result = m_process("get_data", $q);
+    //echo $q;
+    $gcm_message = "";
+    $registrationId = array();
+    if ($result['errormsg'] != '') {
+        return $result['errormsg'];
+    } else {
+        foreach ($result["res"] as $arr_db) {
+            $registrationId[] = $arr_db["gcmp_gcm_gcm_id"];
+            $gcm_message = $arr_db["gcmp_message"];
+            $goToScreen = $arr_db["gcmp_goToScreen"];
+            $school = $arr_db["gcmp_school"];
+            $update_ids .= "," . $arr_db["gcmp_id"];
+        }
+    }
+
+    $msg = array('message' => $gcm_message, 'goToScreen' => $goToScreen, 'school' => $school);
+    /*
+      'goToScreen'		=> $goToScreen,
+      'school'			=> $school,
+     *  */
+
+    $fields = array
+        (
+        'registration_ids' => $registrationId,
+        'data' => $msg,
+    );
+
+    $headers = array
+        (
+        'Authorization: key=' . API_ACCESS_KEY,
+        'Content-Type: application/json',
+        'delay_while_idle: true',
+    );
+
+    try {
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, 'https://android.googleapis.com/gcm/send');
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($fields));
+        $result = curl_exec($ch);
+        curl_close($ch);
+
+        $q = "UPDATE sm_gcm_process SET gcmp_status = 'N' WHERE  gcmp_id IN ($update_ids)";
+        $result = m_process("update", $q);
+        //   echo $q;
+        $gcm_message = "";
+        $registrationId = array();
+        if ($result['errormsg'] != '') {
+            return $result['errormsg'];
+        }
+    } catch (Exception $e) {
+        echo $e;
+        echo "inside catch";
+    }
+
+// prep the bundle
+    /*
+      $msg = array
+      (
+      'message' 	=> 'here is a message. message',
+      'title'		=> 'This is a title. title',
+      'subtitle'	=> 'This is a subtitle. subtitle',
+      'tickerText'	=> 'Ticker text here...Ticker text here...Ticker text here',
+      'vibrate'	=> 1,
+      'sound'		=> 1,
+      'largeIcon'	=> 'large_icon',
+      'smallIcon'	=> 'small_icon'
+      );
+     */
+//$msg = "please note this..";
+}
+
+function add_notes($arr_data) {
+    $not_id = 0;
+    $q = "INSERT INTO sm_notification(not_message, not_sc_id,not_goToScreen, not_status, not_create_date, not_create_by_id, not_update_date, not_update_by_id) VALUES ('" . $arr_data["not_message"] . "'," . $arr_data["not_sc_id"] . ",'" . $arr_data["not_goToScreen"] . "', 'A', ' " . $arr_data["not_create_date"] . "'," . $arr_data["not_create_by_id"] . " , ' " . $arr_data["not_update_date"] . " ', " . $arr_data["not_update_by_id"] . ") ";
+
+
+    //, '$gcmp_gcm_gcm_id', $gcmp_gcm_sc_id, $gcmp_gcm_stu_id, )";
+    //$q = "INSERT INTO sm_gcm_process(gcmp_gcm_gcm_id, gcmp_gcm_sc_id, gcmp_gcm_stu_id, gcmp_message, gcmp_title, gcmp_subtitle, gcmp_tickerText, gcmp_status, gcmp_create_by, gcmp_create_date) SELECT  ($gcmp_id, '$gcmp_gcm_gcm_id', $gcmp_gcm_sc_id, $gcmp_gcm_stu_id, '$gcmp_message', '$gcmp_title', '$gcmp_subtitle', '$gcmp_tickerText',  'Y', '$gcmp_create_by', '$gcmp_create_date')";
+    $result = m_process("insert", $q);
+    //echo $q;
+    if ($result['errormsg'] != '') {
+        return $result['errormsg'];
+    } else {
+        $not_id = $result["id"];
+    }
+    $arr_data["gcmp_not_id"] = $not_id;
+    add_gcm_notification($arr_data);
+}
+
+function clean_name($input_name) {
+    $input_name = strtolower($input_name);
+    $input_name = str_replace("=", "", $input_name);
+    $input_name = str_replace("?", "", $input_name);
+    $input_name = str_replace("&", "and", $input_name);
+    $input_name = str_replace("%", "", $input_name);
+    $input_name = str_replace("'", "", $input_name);
+    $input_name = str_replace("\"", "", $input_name);
+    $input_name = str_replace("/", "", $input_name);
+    $input_name = str_replace("\\", "", $input_name);
+    $input_name = str_replace(" ", "-", $input_name);
+    $input_name = str_replace(",", "", $input_name);
+    $input_name = str_replace("--", "-", $input_name);
+    return $input_name;
+}
+
+function get_attendance_details($sc_id, $std_id, $cl_id, $att_stu_medium, $att_date) {
+    $response = array();
+    $response['errormsg'] = '';
+    $response["att_attended"] = '';
+    $response["att_absent"] = '';
+    $att_date = convert_disp_to_db_date($att_date);
+    $q = " SELECT att_attended , att_absent FROM ";
+    $q.= " sm_attendance_b INNER JOIN sm_school_master ON (sc_id=att_sc_id) INNER JOIN sm_standard ON (std_id = att_std_id) INNER JOIN sm_class  ON (cl_id = att_cl_id ) ";
+    $q.= " WHERE sc_id=$sc_id AND std_id = $std_id AND cl_id = $cl_id AND att_stu_medium = '$att_stu_medium' AND att_date ='$att_date'  ";
+
+    $result = m_process("get_data", $q);
+
+    if ($result['errormsg'] != '') {
+        $response['errormsg'] = $result['errormsg'];
+    } else {
+        if ($result['count'] > 0) {
+            print_r($result["res"]);
+            $response["att_attended"] = $result["res"][0]["att_attended"];
+            $response["att_absent"] = $result["res"][0]["att_absent"];
+        }
+    }
+
+    return $response;
+}
+
+function get_student_id_school_id($req_school, $req_session_id) {
+    $arr_return = array();
+    $arr_return["stu_id"] = 0;
+    $arr_return["sc_id"] = 0;
+
+    $q_student_school = "SELECT DISTINCT s.stu_id , sm.sc_id FROM sm_school_master sm
+                        INNER JOIN sm_student s ON (s.stu_sc_id=sm.sc_id)
+                        INNER JOIN sm_login lo  ON (lo.lo_access_id = s.stu_id)
+                        WHERE s.stu_status = 'A' AND sm.sc_name='" . $req_school . "' AND lo.lo_status = 'A'  AND lo.lo_id =  " . $req_session_id;
+    $result_student_school = m_process("get_data", $q_student_school);
+
+    if ($result_student_school['errormsg'] != '') {
+        $response_array_student_school['error_code'] = '002';
+        $response_array_student_school['error_message'] = $result_0['errormsg'];
+    } else {
+        if ($result_student_school['count'] > 0) {
+            $arr_return["stu_id"] = $result_student_school["res"][0]["stu_id"];
+            $arr_return["sc_id"] = $result_student_school["res"][0]["sc_id"];
+        }
+    }
+    return $arr_return;
+}
+
+function add_gcm_notification_not_school($arr_data) {
+    if ((!isset($arr_data["condition"])) || (isset($arr_data["condition"]) && $arr_data["condition"] == "" )) {
+        $q = "INSERT INTO sm_gcm_process(gcmp_gcm_gcm_id,	gcmp_not_id, gcmp_gcm_sc_id, gcmp_gcm_stu_id, gcmp_message, gcmp_title, gcmp_subtitle, gcmp_tickerText, gcmp_status, gcmp_create_by, gcmp_create_date,gcmp_goToScreen,gcmp_school) ";
+        $q .= " SELECT g.gcm_gcm_id ,  " . $arr_data["gcmp_not_id"] . ",1,1,' " . $arr_data["gcmp_message"] . "', '" . $arr_data["gcmp_title"] . "', '" . $arr_data["gcmp_subtitle"] . "', '" . $arr_data["gcmp_tickerText"] . "',  'Y', '" . $arr_data["gcmp_create_by"] . "', '" . $arr_data["gcmp_create_date"] . "', '" . $arr_data["gcmp_goToScreen"] . "' , 'eklavya'  FROM sm_gcm g ";
+        $q .= " WHERE g.gcm_sc_id = 0  ";
+
+        $result = m_process("insert", $q);
+
+        if ($result['errormsg'] != '') {
+            print_r($result['errormsg']);
+            // return $result['errormsg'];
+            exit(0);
+        }
+    }
+}
+
+function get_user_details() {
+
+    global $tmp_admin_id, $tmp_name, $tmp_pass, $tmp_type, $tmp_status, $tmp_batch_time;
+//  $arr_respone = array("errormsg");
+    $tmp_id = session_get("id");
+
+    $q = "SELECT br_id, br_name, br_pass , br_batch_time, br_type, br_status FROM sm_branch WHERE br_id = " . $tmp_id;
+    $result = m_process("get_data", $q);
+    //echo $q;
+
+
+
+    if ($result['errormsg'] != '') {
+        return $result['errormsg'];
+    } else {
+
+        if ($result["count"] == 0) {
+
+            return "Invalid Admin:001";
+        } else {
+
+
+            $tmp_name = $result["res"][0]["br_name"];
+            $tmp_pass = $result["res"][0]["br_pass"];
+            $tmp_type = $result["res"][0]["br_type"];
+            $tmp_status = $result["res"][0]["br_status"];
+            $tmp_id = $result["res"][0]["br_id"];
+            $tmp_batch_time = $result["res"][0]["br_batch_time"];
+
+
+
+            return "";
+            /*
+              $arr_respone["admin_fname"] = $arr_db[0]["admin_fname"];
+              $arr_respone["admin_mname"] = $arr_db[0]["admin_mname"];
+              $arr_respone["admin_lname"] = $arr_db[0]["admin_lname"];
+              $arr_respone["admin_uname"] = $arr_db[0]["admin_uname"];
+              $arr_respone["admin_pass"] = $arr_db[0]["admin_pass"];
+              $arr_respone["admin_email"] = $arr_db[0]["admin_email"];
+              $arr_respone["admin_status"] = $arr_db[0]["admin_status"];
+              $arr_respone["admin_login_type"] = $arr_db[0]["admin_login_type"];
+              $arr_respone["admin_br_id"] = $arr_db[0]["admin_br_id"];
+             */
+        }
+    }
+}
+
+function get_branch_batch_time() {
+    global $tmp_batch_time, $tmp_default_batch_time;
+    $var_decode = json_decode($tmp_batch_time);
+    $tmp_default_batch_time = $var_decode[0];
+    return $var_decode;
+}
+
+function update_gr_no($stu_id, $stu_br_id) {
+    $stu_gr_no = 'MA' . substr('00000000' . $stu_id, -8);
+    $q = "UPDATE  sm_student SET stu_gr_no = '" . $stu_gr_no . "' ";
+    $q .= " WHERE stu_id = " . $stu_id . " AND stu_br_id  =  " . $stu_br_id;
+    return m_process("update", $q);
+}
+
+function get_course_pricing($cd_id) {
+    $arr_response = array();
+    $arr_response["errormsg"] = "";
+    $q = "SELECT  cd_eu_fee, cd_nu_fee ,cd_eu_exam_fee, 	cd_nu_exam_fee ,cd_eu_fee_onemonth, cd_nu_fee_onemonth FROM sm_course_details WHERE  cd_id  = " . $cd_id;
+    $result = m_process("get_data", $q);
+
+    if ($result['errormsg'] != '') {
+        return $result['errormsg'];
+    } else {
+
+        if ($result["count"] > 0) {
+            $arr_response["cd_eu_fee"] = $result[0]["cd_eu_fee"];
+            $arr_response["cd_nu_fee"] = $result[0]["cd_nu_fee"];
+            $arr_response["cd_eu_exam_fee"] = $result[0]["cd_eu_exam_fee"];
+            $arr_response["cd_nu_exam_fee"] = $result[0]["cd_nu_exam_fee"];
+            $arr_response["cd_eu_fee_onemonth"] = $result[0]["cd_eu_fee_onemonth"];
+            $arr_response["cd_nu_fee_onemonth"] = $result[0]["cd_nu_fee_onemonth"];
+        }
+        return $arr_respone;
+    }
+}
+
+function mark_other_course_as_inactive($stu_id, $sc_id) {
+    $arr_response = array();
+    $arr_response["errormsg"] = "";
+    $q = "UPDATE sm_student_course SET sc_is_current = 0 WHERE sc_stu_id = $stu_id AND sc_id != $sc_id ";
+    $result = m_process("update", $q);
+
+    if ($result['errormsg'] != '') {
+        return $result['errormsg'];
+    }
+    return "";
+}
+
+function get_fee_details_for_student_course($br_id, $brt_id, $be_id) {
+    $arr_response = array();
+    $arr_response["errormsg"] = "";
+    $arr_response["totalamount"] = 0;
+    // start of getting amount from branch type
+    $brt_amount = 0;
+    $q = "SELECT brt_amount  FROM sm_branch_type WHERE brt_br_id = $br_id AND brt_id = $brt_id";
+    $result = m_process("get_data", $q);
+
+    if ($result['errormsg'] != '') {
+        $arr_response['errormsg'] = $result['errormsg'];
+        return $arr_response;
+    } else if ($result['count'] == 0) {
+        $arr_response['errormsg'] = "no branch type found";
+        return $arr_response;
+    } else {
+        $brt_amount = $result["res"][0]['brt_amount'];
+    }
+    // end of getting amount from branch type
+    // start of getting amount from belt type
+    $be_belt_fee = 0;
+    $q = "SELECT be_belt_fee  FROM sm_belt WHERE be_br_id = $br_id AND be_id = $be_id";
+    $result = m_process("get_data", $q);
+
+    if ($result['errormsg'] != '') {
+        $arr_response['errormsg'] = $result['errormsg'];
+        return $arr_response;
+    } else if ($result['count'] == 0) {
+        $arr_response['errormsg'] = "no belt found";
+        return $arr_response;
+    } else {
+        $be_belt_fee = $result["res"][0]['be_belt_fee'];
+    }
+    // end of getting amount from belt type
+    $arr_response["totalamount"] = $brt_amount + $be_belt_fee;
+    return $arr_response;
+}
+
+// if function has any error then this function will return error else return blnak value.
+function add_course_to_student($arr_course_data) {
+    global $cur_date, $tmp_admin_id;
+
+    $arr_get_course_details = get_fee_details_for_student_course($arr_course_data['sc_br_id'], $arr_course_data['sc_brt_id'], $arr_course_data['sc_be_id']);
+    // $arr_get_course_details = get_course_pricing($sc_cd_id);
+    if ($arr_get_course_details["errormsg"] != "") {
+        return $arr_get_course_details["errormsg"];
+    } else {
+
+        $arr_course_data['sc_create_date'] = $cur_date;
+        $arr_course_data['sc_update_date'] = $cur_date;
+        $arr_course_data['sc_create_by_id'] = $tmp_admin_id;
+        $arr_course_data['sc_update_by_id'] = $tmp_admin_id;
+        $arr_course_data['sc_total_fee'] = $arr_get_course_details["totalamount"];
+        $arr_course_data['sc_total_paid'] = 0;
+        $arr_course_data['sc_full_fee_paid'] = 'N';
+        $arr_course_data['sc_is_current'] = 1;
+
+//  $arr_course_data['sc_cd_id'] comes from top
+//  $arr_course_data['sc_stu_id'] comes from top
+//  $arr_course_data['sc_joined_date'] comes from top
+// start of checking code of duplicate entry of student course
+        $check_student_course_query = 'SELECT 1 FROM sm_student_course WHERE sc_br_id = ' . $arr_course_data['sc_br_id'] . ' AND sc_brt_id = ' . $arr_course_data['sc_brt_id'] . ' AND	sc_co_id = ' . $arr_course_data['sc_co_id'] . ' AND	sc_be_id = ' . $arr_course_data['sc_be_id'] . ' AND sc_stu_id =' . $arr_course_data['sc_stu_id'];
+        $data = array("sc_id" => 0);
+        $check_student_course_result = db_perform("sm_student_course", $data, 'get', '', '', $check_student_course_query);
+        if ($check_student_course_result["errormsg"] != '') {
+            return $check_student_course_result["errormsg"];
+        } else if ($check_student_course_result["count"] > 0) {
+            return "student is alread enrolled for the same course";
+        }
+// end of checking code of duplicate entry of student course
+// start to code to add student in enrollment
+        $add_course_q = "INSERT INTO sm_student_course(sc_br_id,sc_be_id,sc_co_id,sc_brt_id,sc_stu_id, sc_cd_id, sc_joined_date, sc_total_fee, sc_total_paid, sc_full_fee_paid, sc_is_current, sc_create_date, sc_create_by_id, sc_update_date, sc_update_by_id) VALUES ";
+        $add_course_q .="(" . $arr_course_data['sc_br_id'] . ", " . $arr_course_data['sc_be_id'] . ", " . $arr_course_data['sc_co_id'] . ", " . $arr_course_data['sc_brt_id'] . ", " . $arr_course_data['sc_stu_id'] . ", " . $arr_course_data['sc_cd_id'] . ", '" . $arr_course_data['sc_joined_date'] . "', " . $arr_course_data['sc_total_fee'] . ", " . $arr_course_data['sc_total_paid'] . ", '" . $arr_course_data['sc_full_fee_paid'] . "', " . $arr_course_data['sc_is_current'] . ", '" . $arr_course_data['sc_create_date'] . "', " . $arr_course_data['sc_create_by_id'] . ", '" . $arr_course_data['sc_update_date'] . "', " . $arr_course_data['sc_update_by_id'] . ") ";
+
+        $result = m_process("insert", $add_course_q);
+        if ($result['status'] == 'failure') {
+            return $result['errormsg'];
+        } else {
+                    $arr_log = array();
+                      $arr_log["log_message"]= "Added new course to student.";
+                      $arr_log["log_stu_id"]= $arr_course_data['sc_stu_id'];
+                      $arr_log["log_admin_id"]= $tmp_admin_id;
+                      $arr_log["log_action"]= "add_course_to_student";
+                      add_log($arr_log);
+            $sc_id = $result['id'];
+            $result_1 = mark_other_course_as_inactive($arr_course_data['sc_stu_id'], $sc_id);
+            return $result_1;
+        }
+// end to code to add student in enrollment
+    }
+}
+
+
+//  add  couser to student older one end
+// $data_arr_input['select_field']
+// $data_arr_input['table']
+// $data_arr_input['where']
+// $data_arr_input['key_id']
+// $data_arr_input['key_name']
+// $data_arr_input['order_by']
+function m_process_arrray($data_arr_input) {
+    /*
+      foreach($data_arr_input["field"] as $key=>$value)
+      {
+
+      }
+      $order_by = "";
+      if (isset($data_arr_input["order_by"]) && $data_arr_input["order_by"] != '') {
+      $order_by = $data_arr_input["order_by"];
+      } else {
+      $order_by = $data_arr_input['key_name'];
+      }
+      $arr_retun = array();
+      $arr_retun['error_message'] = '';
+      $arr_retun['id'] = 0;
+      $q = "SELECT " . $data_arr_input['select_field'] . "  FROM " . $data_arr_input['table'];
+      if ($data_arr_input['where'] != '') {
+      $q .= " WHERE " . $data_arr_input['where'];
+      }
+      $q .= " ORDER BY " . $order_by;
+      //exit(0);
+      // echo $q;
+      $result = m_process("get_data", $q);
+      if ($result['errormsg'] != '') {
+      $arr_retun['error_message'] = $result['errormsg'];
+      } else {
+      if ($result['count'] > 0) {
+      foreach ($result['res'] as $db_row) {
+      if ($data_arr_input['current_selection_value'] == $db_row[$data_arr_input['key_id']]) {
+      echo '<option value="' . $db_row[$data_arr_input['key_id']] . '" selected="selected">' . $db_row[$data_arr_input['key_name']] . '</option>';
+      } else {
+      echo '<option value="' . $db_row[$data_arr_input['key_id']] . '">' . $db_row[$data_arr_input['key_name']] . '</option>';
+      }
+      }
+      }
+      }
+     */
+}
+
+// if function has any error then this function will return error else return blnak value.
+function pay_fee_student($arr_fees_data) {
+    global $cur_date, $tmp_admin_id;
+
+// start to add entry in payment
+
+    $data = array();
+    $data["pt_type"] = $arr_fees_data["pt_type"];
+    $data["pt_tran_u_type"] = $arr_fees_data["pt_tran_u_type"];
+    $data["pt_tran_bank"] = $arr_fees_data["pt_tran_bank"];
+    $data["pt_tran_mode_of_payent"] = $arr_fees_data["pt_tran_mode_of_payent"];
+    $data["pt_tran_no"] = $arr_fees_data["pt_tran_no"];
+    $data["pt_tran_amount"] = $arr_fees_data["pt_tran_amount"];
+    $data["pt_receipt_no"] = $arr_fees_data["pt_receipt_no"];
+
+    $data["pt_tran_date"] = $arr_fees_data["pt_tran_date"];
+    $data["pt_tran_remarks"] = $arr_fees_data["pt_tran_remarks"];
+    $data["pt_sc_id"] = $arr_fees_data["sc_id"];
+
+    $data["pt_create_date"] = $cur_date;
+    $data["pt_create_by_id"] = $tmp_admin_id;
+
+    $data["pt_update_date"] = $cur_date;
+    $data["pt_update_by_id"] = $tmp_admin_id;
+
+    $add_fees_result = db_perform("sm_payment_transaction", $data, 'insert', '', '', '');
+
+    if ($add_fees_result["status"] == 'failure') {
+        return $add_fees_result["errormsg"];
+    } else {
+        $q_update = "UPDATE sm_student_course SET sc_total_paid = sc_total_paid + ".$arr_fees_data['pt_tran_amount']." WHERE sc_id = ".$arr_fees_data['sc_id'];
+        $udpate_result = m_process("update", $q_update);
+        if ($udpate_result["status"] == "failure") {
+            return $udpate_result["errormsg"];
+        } else {
+          $q_update1 = "UPDATE sm_student_course SET sc_full_fee_paid = 'Y' WHERE sc_total_fee = sc_total_paid AND sc_id = ".$arr_fees_data['sc_id'];
+          $udpate_result1 = m_process("update", $q_update1);
+          if ($udpate_result1["status"] == "failure") {
+              return $udpate_result1["errormsg"];
+          } else {
+              return "";
+          }
+        }
+    }
+    return '';
+}
+
+// if function has any error then this function will return error else return blnak value.
+function pay_fee_student_exam($arr_fees_data) {
+    global $cur_date, $tmp_admin_id;
+
+// start to add entry in payment
+
+    $data = array();
+    $data["pt_type"] = $arr_fees_data["pt_type"];
+    $data["pt_tran_u_type"] = $arr_fees_data["pt_tran_u_type"];
+    $data["pt_tran_bank"] = $arr_fees_data["pt_tran_bank"];
+    $data["pt_tran_mode_of_payent"] = $arr_fees_data["pt_tran_mode_of_payent"];
+    $data["pt_tran_no"] = $arr_fees_data["pt_tran_no"];
+    $data["pt_tran_amount"] = $arr_fees_data["pt_tran_amount"];
+    $data["pt_receipt_no"] = $arr_fees_data["pt_receipt_no"];
+
+    $data["pt_tran_date"] = $arr_fees_data["pt_tran_date"];
+    $data["pt_tran_remarks"] = $arr_fees_data["pt_tran_remarks"];
+    $data["pt_sc_id"] = $arr_fees_data["sc_id"];
+
+    $data["pt_create_date"] = $cur_date;
+    $data["pt_create_by_id"] = $tmp_admin_id;
+
+    $data["pt_update_date"] = $cur_date;
+    $data["pt_update_by_id"] = $tmp_admin_id;
+
+    $add_fees_result = db_perform("sm_payment_transaction", $data, 'insert', '', '', '');
+
+    if ($add_fees_result["status"] == 'failure') {
+        return $add_fees_result["errormsg"];
+    } else {
+        $q_update = "UPDATE sm_exam_student_entrolled SET exs_update_date = '".$cur_date."',exs_update_by_id = '".$tmp_admin_id."', exs_paid = 1 , exs_transction_no = '".$arr_fees_data["pt_tran_no"]."', exs_transtion_type = '".$data["pt_tran_u_type"]."' WHERE exs_id = ".$arr_fees_data['sc_id'];
+        $udpate_result = m_process("update", $q_update);
+        if ($udpate_result["status"] == "failure") {
+            return $udpate_result["errormsg"];
+        } else {
+              return "";
+        }
+    }
+    return '';
+}
+
+
+// if function has any error then this function will return error else return blnak value.
+function update_fee_student_to_course($sc_id) {
+// start to add entry in payment
+if ($sc_id > 0)
+{
+  $q_update_amount = "UPDATE sm_student_course LEFT JOIN (SELECT SUM(pt_tran_amount) sum_amt,pt_sc_id FROM sm_payment_transaction GROUP BY pt_sc_id) spt ON (spt.pt_sc_id = sm_student_course.sc_id) SET sc_total_paid = (CASE WHEN spt.sum_amt IS NULL THEN 0 ELSE spt.sum_amt END) WHERE sc_id = $sc_id ";
+  $r_update_amount =   m_process("update",$q_update_amount);
+  if ($r_update_amount["status"] == "error" )
+  {
+    return $r_update_amount["erromsg"];
+  }
+  else {
+    $q_update1 = "UPDATE sm_student_course SET sc_full_fee_paid = 'N' WHERE sc_total_fee != sc_total_paid AND sc_id = ".$sc_id;
+    $udpate_result1 = m_process("update", $q_update1);
+    if ($udpate_result1["status"] == "failure") {
+        return $udpate_result1["errormsg"];
+    } else {
+        return "";
+    }
+  }
+  return "";
+  }
+  else
+  return "";
+}
+// action = add for adding new and edit = editing for existing
+function allocation_deallocation_exam_categories($action, $be_id, $exam_br_id, $data,$datao)
+{
+    $arr_response = array("errormsg"=>"","id"=>0);
+    if ($action == 'add')
+    {
+            $cateallo_q = 'INSERT INTO sm_exam_categories_allocation(eca_be_id, eca_exc_id, eca_total_marks, eca_obtain_marks, eca_br_id, eca_create_date, eca_create_by_id, eca_update_date, eca_update_by_id) VALUES ('.$be_id.','.$data["eca_exc_id"].','.$data["eca_total_marks"].','.$data["eca_obtain_marks"].','.$exam_br_id.',"'.$datao["eca_create_date"].'",'.$datao["eca_create_by_id"].',"'.$datao["eca_update_date"].'",'.$datao["eca_update_by_id"].')';
+            $cateallo_r =  m_process("insert",$cateallo_q);
+            if ($cateallo_r["status"] == 'error')
+            {
+              $arr_response["errormsg"] = $cateallo_r["errormsg"];
+              return $arr_response ;
+            }
+    }
+    if ($action == 'update')
+    {
+
+            $cateallocheck_q = 'SELECT eca_id FROM sm_exam_categories_allocation WHERE eca_be_id =  '.$be_id.' AND eca_exc_id = '.$data["eca_exc_id"];
+            $cateallocheck_r =  m_process("get_data",$cateallocheck_q);
+            if ($cateallocheck_r["status"] == 'error')
+            {
+              $arr_response["errormsg"] = $cateallocheck_r["errormsg"];
+              return $arr_response ;
+
+            }
+            else if ($cateallocheck_r["count"] == 0)
+            {
+              $cateallo_q = 'INSERT INTO sm_exam_categories_allocation(eca_be_id, eca_exc_id, eca_total_marks, eca_obtain_marks, eca_br_id, eca_create_date, eca_create_by_id, eca_update_date, eca_update_by_id) VALUES ('.$be_id.','.$data["eca_exc_id"].','.$data["eca_total_marks"].','.$data["eca_obtain_marks"].','.$exam_br_id.',"'.$datao["eca_create_date"].'",'.$datao["eca_create_by_id"].',"'.$datao["eca_update_date"].'",'.$datao["eca_update_by_id"].')';
+              $cateallo_r =  m_process("insert",$cateallo_q);
+              if ($cateallo_r["status"] == 'error')
+              {
+                $arr_response["errormsg"] = $cateallo_r["errormsg"];
+                return $arr_response ;
+              }
+              else {
+                $arr_response["id"] = $cateallo_r["id"];
+                return $arr_response ;
+              }
+            }
+            else
+            {
+              $eca_id = $cateallocheck_r["res"][0]["eca_id"];
+              $cateallou_q = 'UPDATE sm_exam_categories_allocation SET eca_be_id='.$be_id.' , eca_exc_id='.$data["eca_exc_id"].' , eca_total_marks = '.$data["eca_total_marks"].' , eca_obtain_marks = '.$data["eca_obtain_marks"].', eca_br_id = '.$exam_br_id.' , eca_create_date = "'.$datao["eca_create_date"].'" , eca_create_by_id = '.$datao["eca_create_by_id"].' , eca_update_date = "'.$datao["eca_update_date"].'" , eca_update_by_id= '.$datao["eca_update_by_id"].' WHERE eca_id =   '.$eca_id;
+              $cateallou_r =  m_process("update",$cateallou_q);
+              if ($cateallou_r["status"] == 'error')
+              {
+                $arr_response["errormsg"] = $cateallou_r["errormsg"];
+                return $arr_response ;
+              }
+              else {
+                $arr_response["id"] = $eca_id;
+                return $arr_response ;
+              }
+            }
+    }
+
+    return $arr_response;
+}
+function remove_deallocation_exam_categories($none_removal_ids,$eca_be_id)
+{
+
+  $none_removal_ids = trim($none_removal_ids);
+  $none_removal_ids = str_replace(",,",",",$none_removal_ids);
+
+  // echo "**".$none_removal_ids."**".$eca_ex_id; exit(0);
+  if ($none_removal_ids != '')
+  {
+   $cateallo_q = 'DELETE FROM sm_exam_categories_allocation WHERE eca_be_id = '.$eca_be_id .' AND eca_id NOT IN ('.$none_removal_ids.'0) ';
+
+  $cateallo_r =  m_process("delete",$cateallo_q);
+  if ($cateallo_r["status"] == 'error')
+  {
+    return $cateallo_r["errormsg"];
+  }
+}
+  return "";
+}
+function remove_enroll_student($none_removal_ids,$ex_id)
+{
+
+  $none_removal_ids = trim($none_removal_ids);
+  $none_removal_ids = str_replace(",,",",",$none_removal_ids);
+
+  if ($none_removal_ids != '')
+  {
+   $cateallo_q = 'DELETE FROM sm_exam_student_entrolled WHERE exs_ex_id = '.$ex_id .' AND exs_id NOT IN ('.$none_removal_ids.'0) ';
+
+  $cateallo_r =  m_process("delete",$cateallo_q);
+  if ($cateallo_r["status"] == 'error')
+  {
+    return $cateallo_r["errormsg"];
+  }
+
+  // removing from result categories table too
+   $cateallo_q = 'DELETE FROM sm_exam_result WHERE exre_ex_id = '.$ex_id .' AND exre_exs_id NOT IN ('.$none_removal_ids.'0) ';
+
+  $cateallo_r =  m_process("delete",$cateallo_q);
+  if ($cateallo_r["status"] == 'error')
+  {
+    return $cateallo_r["errormsg"];
+  }
+}
+  return "";
+}
+
+function exam_student_entrolled($exs_ex_id,$exs_stu_id,$arr_data)
+{
+
+  if ($none_removal_ids != '')
+  {
+   $cateallo_q = 'INSERT INTO sm_exam_student_entrolled( exs_ex_id, exs_stu_id, exs_fee, exs_paid, exs_attended, exs_transtion_type, exs_transction_no, exs_create_date, exs_create_by_id, exs_update_date, exs_update_by_id) VALUES (exs_ex_id, exs_stu_id, exs_fee, exs_paid, exs_attended, exs_transtion_type, exs_transction_no, exs_create_date, exs_create_by_id, exs_update_date, exs_update_by_id)';
+
+  $cateallo_r =  m_process("delete",$cateallo_q);
+  if ($cateallo_r["status"] == 'error')
+  {
+    return $cateallo_r["errormsg"];
+  }
+}
+  return "";
+}
+
+// start function to entroll in result
+function insert_exam_result_categories_to_student($ex_id, $stu_id,$exs_ids)
+{
+
+$arr_response = array("errormsg"=>"","id"=>0);
+
+ global $cur_date, $tmp_admin_id;
+
+   $cateallo_q = 'INSERT INTO sm_exam_result (exre_ex_id, exre_exs_id, exre_eca_exc_id, exre_total_marks, exre_br_id,exre_stu_id, exre_total_marks_obtain, exre_pass,  exre_create_date, exre_create_by_id, exre_update_date, exre_update_by_id)
+ SELECT DISTINCT ex_id,exs_id,eca_exc_id, eca_total_marks, stu_br_id, stu_id, 0, "", "'.$cur_date.'",'.$tmp_admin_id.', "'.$cur_date.'",'.$tmp_admin_id.'
+FROM  sm_student
+INNER JOIN sm_student_course
+ON (sc_stu_id = stu_id AND sc_is_current =1)
+INNER JOIN sm_belt ON (sc_be_id = be_id )
+INNER JOIN sm_exam ON (ex_br_id  = stu_br_id)
+INNER JOIN sm_exam_student_entrolled ON (stu_id = exs_stu_id AND exs_ex_id  = '.$ex_id.')
+INNER JOIN sm_exam_categories_allocation ON (be_id =  eca_be_id)
+WHERE stu_br_id= '.$tmp_admin_id.' AND ex_id = '.$ex_id .' AND exs_id IN ('.$exs_ids.')';
+
+// stu_br_id= '.$tmp_admin_id.' AND stu_id = '.$stu_id.'  And ex_id = '.$ex_id;
+
+    $cateallo_r =  m_process("insert",$cateallo_q);
+    if ($cateallo_r["status"] == 'error')
+    {
+      $arr_response["errormsg"] = $cateallo_r["errormsg"];
+      return $arr_response ;
+    }
+
+ }
+// end function to entroll in result
+
+function validate_fees_paid_or_not($exa_id,$stu_id)
+{
+
+    $q_check = "SELECT DISTINCT exs_id
+        FROM  sm_exam_student_entrolled
+        INNER JOIN sm_student_course ON (sc_stu_id = exs_stu_id AND sc_be_id =exs_be_id AND sc_co_id = exs_co_id )
+        WHERE exs_paid = 1 AND exs_stu_id  = ".$stu_id." AND exs_result_status IN ('A','F') ";
+
+  $r_check =  m_process("get_data",$q_check);
+  if ($r_check["status"] == 'error')
+  {
+    return false;
+  }
+  else if ($r_check["count"] == 0)
+  {
+    return false;
+  }
+  return true;
+}
+function enroll_student($exa_id, $stu_id)
+{
+  global $exs_ids;
+$arr_response = array("errormsg"=>"","id"=>0);
+
+  $cateallocheck_q = 'SELECT exs_id FROM sm_exam_student_entrolled WHERE exs_ex_id =  '.$exa_id.' AND exs_stu_id = '.$stu_id;
+  $cateallocheck_r =  m_process("get_data",$cateallocheck_q);
+  if ($cateallocheck_r["status"] == 'error')
+  {
+    $arr_response["errormsg"] = $cateallocheck_r["errormsg"];
+    return $arr_response ;
+
+  }
+  else if ($cateallocheck_r["count"] == 0)
+  {
+
+   global $cur_date, $tmp_admin_id;
+   $exs_paid = 0;
+   $exs_already_paid = 'N';
+  if (validate_fees_paid_or_not($exa_id,$stu_id) == true )
+  {
+    $exs_paid = 1;
+    $exs_already_paid = 'Y';
+  }
+    $cateallo_q = 'INSERT INTO sm_exam_student_entrolled
+(exs_already_paid, exs_paid , exs_ex_id, exs_stu_id, 	exs_be_id,  	exs_co_id, exs_total_marks, exs_eca_exc_ids, exs_fee, exs_create_date, exs_create_by_id, exs_update_date, exs_update_by_id)
+SELECT "'.$exs_already_paid.'",'.$exs_paid.', ex_id, stu_id, sc_be_id, sc_co_id, eca_total_marks as exs_total_marks, M.exs_eca_exc_ids, be.be_belt_exam_fee, "'.$cur_date.'",'.$tmp_admin_id.', "'.$cur_date.'",'.$tmp_admin_id.'
+FROM  sm_student
+INNER JOIN sm_student_course
+ON (sc_stu_id = stu_id AND sc_is_current =1)
+INNER JOIN sm_belt be ON (sc_be_id = be.be_id )
+LEFT JOIN sm_exam ON (ex_br_id  = stu_br_id)
+LEFT JOIN sm_exam_student_entrolled ON (sc_stu_id = exs_stu_id AND exs_ex_id  = '.$exa_id.')
+LEFT JOIN
+(SELECT SUM(IF(eca_total_marks IS NULL,0,eca_total_marks)) as  eca_total_marks , be_id , GROUP_CONCAT(eca_id) AS exs_eca_exc_ids
+FROM sm_belt LEFT JOIN sm_exam_categories_allocation ON (be_id =  eca_be_id)
+GROUP BY be_id ) as M  ON (sc_be_id = M.be_id)
+WHERE
+stu_br_id= '.$tmp_admin_id.'
+AND stu_id = '.$stu_id.'  And ex_id =
+'.$exa_id;
+
+    //$cateallo_q = 'INSERT INTO sm_exam_categories_allocation(eca_be_id, eca_exc_id, eca_total_marks, eca_obtain_marks, eca_br_id, eca_create_date, eca_create_by_id, eca_update_date, eca_update_by_id) VALUES ('.$be_id.','.$data["eca_exc_id"].','.$data["eca_total_marks"].','.$data["eca_obtain_marks"].','.$exam_br_id.',"'.$datao["eca_create_date"].'",'.$datao["eca_create_by_id"].',"'.$datao["eca_update_date"].'",'.$datao["eca_update_by_id"].')';
+    $cateallo_r =  m_process("insert",$cateallo_q);
+    if ($cateallo_r["status"] == 'error')
+    {
+      $arr_response["errormsg"] = $cateallo_r["errormsg"];
+      return $arr_response ;
+    }
+    else {
+      $exs_ids .= $cateallo_r["id"].",";
+      $arr_response["id"] = $cateallo_r["id"];
+      // $arr_exam_student_result_data = array("exre_ex_id"=>$exa_id, "exre_exs_id"=>$arr_response["id"]);
+    //  $arr_exam_student_result = insert_exam_result_categories_to_student($exa_id,$stu_id);
+      return $arr_response ;
+    }
+  }
+  else
+  {
+    $arr_response["id"] =   $cateallocheck_r["res"][0]["exs_id"];
+    return $arr_response ;
+    // no updation code for now so commenting following code
+    /*
+    $eca_id = $cateallocheck_r["res"][0]["eca_id"];
+    $cateallou_q = 'UPDATE sm_exam_student_entrolled SET eca_be_id='.$be_id.' , eca_exc_id='.$data["eca_exc_id"].' , eca_total_marks = '.$data["eca_total_marks"].' , eca_obtain_marks = '.$data["eca_obtain_marks"].', eca_br_id = '.$exam_br_id.' , eca_create_date = "'.$datao["eca_create_date"].'" , eca_create_by_id = '.$datao["eca_create_by_id"].' , eca_update_date = "'.$datao["eca_update_date"].'" , eca_update_by_id= '.$datao["eca_update_by_id"].' WHERE eca_id =   '.$eca_id;
+    $cateallou_r =  m_process("update",$cateallou_q);
+    if ($cateallou_r["status"] == 'error')
+    {
+      $arr_response["errormsg"] = $cateallou_r["errormsg"];
+      return $arr_response ;
+    }
+    else {
+      $arr_response["id"] = $eca_id;
+      return $arr_response ;
+    }
+    */
+    // end of commenting code
+  }
+}
+function get_exam_details($ex_id)
+{
+  $arr_response = array("errormsg"=>"" ,"data"=>"");
+  $cateallocheck_q = 'SELECT * FROM sm_exam WHERE ex_id =  '.$ex_id;
+  $cateallocheck_r =  m_process("get_data",$cateallocheck_q);
+  if ($cateallocheck_r["status"] == 'error')
+  {
+    $arr_response["errormsg"] = $cateallocheck_r["errormsg"];
+
+
+  }
+  else if ($cateallocheck_r["count"] == 0)
+  {
+      $arr_response["errormsg"] = "no details found";
+  }
+  else {
+    $arr_response["data"] = $cateallocheck_r["res"][0];
+  }
+    return $arr_response ;
+}
+
+function add_one_month_fee_to_student($stu_id,$sc_remarks)
+{
+  $cateallocheck_q = 'UPDATE sm_student_course INNER JOIN sm_branch_type ON (sc_brt_id = brt_id) SET sc_total_fee = (sc_total_fee+brt_amount_month) , sc_remarks  = CONCAT(sc_remarks,"'.$sc_remarks.'") ,  sc_full_fee_paid = "N" WHERE sc_is_current = 1 AND sc_stu_id = '.$stu_id;
+  $cateallocheck_r =  m_process("update",$cateallocheck_q);
+  if ($cateallocheck_r["status"] == 'error')
+  {
+    return $cateallocheck_r["errormsg"];
+  }
+  return "";
+}
+/*
+$arr_log = array();
+$arr_log["log_message"]= "";
+$arr_log["log_stu_id"]= "";
+$arr_log["log_admin_id"]= "";
+$arr_log["log_action"]= "";
+
+*/
+function add_log($arr_log)
+{
+  global $cur_date;
+  $arr_log["log_other"]= "";
+  $log_q = "INSERT INTO sm_log(log_message, log_stu_id, log_admin_id, log_action, log_other, log_date) VALUES ('".$arr_log["log_message"]."',".$arr_log["log_stu_id"].",".$arr_log["log_admin_id"].",'".$arr_log["log_action"]."','','".$cur_date."')";
+  $log_r =  m_process("insert",$log_q);
+  if ($log_r["status"] == 'error')
+  {
+    return $log_r["errormsg"];
+  }
+  return "";
+}
+
+// $arr_data["sta_id"] = $process_id_arr_ids[0];
+// $arr_data["sta_att_date"] = disptoDB($sta_att_date);
+// $arr_data["sc_brt_id"] = $process_id_arr_ids[1];
+// $arr_data["sc_co_id"] = $process_id_arr_ids[2];
+// $arr_data["sc_be_id"] = $process_id_arr_ids[3];
+// $arr_data["sc_id"] = $process_id_arr_ids[4];
+// $arr_data["sc_stu_id"] = $process_id_arr_ids[5];
+// $arr_data["stu_br_id"] = $process_id_arr_ids[6];
+// $arr_data["sta_att_status"] = $process_id_arr_ids[6];
+function add_update_attendance($arr_data)
+{
+    global $tmp_admin_id;
+    if ($arr_data["sta_id"] != 0)
+    {
+      // update code will be here
+      $cateallocheck_q = 'UPDATE sm_student_attendance
+      SET sta_att_status = "'.$arr_data["sta_att_status"].'", sta_update_date= now(), sta_update_by_id = '.$tmp_admin_id.' WHERE sta_id = '.$arr_data["sta_id"];
+      $cateallocheck_r =  m_process("update",$cateallocheck_q);
+      if ($cateallocheck_r["status"] == 'error')
+      {
+        return $cateallocheck_r["errormsg"];
+      }
+    }
+    else {
+      $cateallocheck_q = 'INSERT INTO sm_student_attendance(sta_stu_id, sta_att_date, sta_att_status, sta_br_id, sta_co_id, sta_brt_id, sta_be_id, sta_create_date, sta_create_by_id, sta_update_date, sta_update_by_id)
+      VALUES ('.$arr_data["sta_stu_id"].',"'.$arr_data["sta_att_date"].'", "'.$arr_data["sta_att_status"].'",'.$arr_data["sta_br_id"].','.$arr_data["sta_co_id"].','.$arr_data["sta_brt_id"].','.$arr_data["sta_be_id"].',now(), '.$tmp_admin_id.',now(), '.$tmp_admin_id.') ';
+      $cateallocheck_r =  m_process("insert",$cateallocheck_q);
+      if ($cateallocheck_r["status"] == 'error')
+      {
+        return $cateallocheck_r["errormsg"];
+      }
+    }
+}
+
+function getIndianCurrency($number)
+{
+    $decimal = round($number - ($no = floor($number)), 2) * 100;
+    $hundred = null;
+    $digits_length = strlen($no);
+    $i = 0;
+    $str = array();
+    $words = array(0 => '', 1 => 'one', 2 => 'two',
+        3 => 'three', 4 => 'four', 5 => 'five', 6 => 'six',
+        7 => 'seven', 8 => 'eight', 9 => 'nine',
+        10 => 'ten', 11 => 'eleven', 12 => 'twelve',
+        13 => 'thirteen', 14 => 'fourteen', 15 => 'fifteen',
+        16 => 'sixteen', 17 => 'seventeen', 18 => 'eighteen',
+        19 => 'nineteen', 20 => 'twenty', 30 => 'thirty',
+        40 => 'forty', 50 => 'fifty', 60 => 'sixty',
+        70 => 'seventy', 80 => 'eighty', 90 => 'ninety');
+    $digits = array('', 'hundred','thousand','lakh', 'crore');
+    while( $i < $digits_length ) {
+        $divider = ($i == 2) ? 10 : 100;
+        $number = floor($no % $divider);
+        $no = floor($no / $divider);
+        $i += $divider == 10 ? 1 : 2;
+        if ($number) {
+            $plural = (($counter = count($str)) && $number > 9) ? 's' : null;
+            $hundred = ($counter == 1 && $str[0]) ? ' and ' : null;
+            $str [] = ($number < 21) ? $words[$number].' '. $digits[$counter]. $plural.' '.$hundred:$words[floor($number / 10) * 10].' '.$words[$number % 10]. ' '.$digits[$counter].$plural.' '.$hundred;
+        } else $str[] = null;
+    }
+    $Rupees = implode('', array_reverse($str));
+    $paise = ($decimal) ? "." . ($words[$decimal / 10] . " " . $words[$decimal % 10]) . ' Paise' : '';
+    return ($Rupees ? $Rupees . 'Rupees ' : '') . $paise ;
+}
+?>

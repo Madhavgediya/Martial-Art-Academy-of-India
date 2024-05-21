@@ -1,0 +1,319 @@
+<?php
+include("includes/application_top.php");
+include("../includes/class/student.php");
+
+$page_title = "Manage Student";
+$errormsg = get_rdata('errormsg', '');
+
+$id= get_rdata("id",0);
+$act = get_rdata("act");
+$stu_id= get_rdata('stu_id');
+$stu_gr_no= get_rdata('stu_gr_no');
+$stu_first_name= get_rdata('stu_first_name');
+$stu_middle_name= get_rdata('stu_middle_name');
+$stu_last_name= get_rdata('stu_last_name');
+$stu_phone= get_rdata('stu_phone');
+$stu_add_1= get_rdata('stu_add_1');
+$stu_add_2= get_rdata('stu_add_2');
+$stu_city= get_rdata('stu_city');
+$stu_state_id= get_rdata('stu_state_id');
+$stu_postal_code= get_rdata('stu_postal_code');
+$stu_parent1_name= get_rdata('stu_parent1_name');
+$stu_parent1_phone= get_rdata('stu_parent1_phone');
+$stu_parent2_name= get_rdata('stu_parent2_name');
+$stu_parent2_phone= get_rdata('stu_parent2_phone');
+$stu_parent3_name= get_rdata('stu_parent3_name');
+$stu_parent3_phone= get_rdata('stu_parent3_phone');
+$stu_status= get_rdata('stu_status','A');
+$stu_sc_id= get_rdata('stu_sc_id');
+$stu_br_id= get_rdata('stu_br_id');
+$stu_current_course= get_rdata('stu_current_course');
+$stu_create_date= get_rdata('stu_create_date');
+$stu_create_by_id= get_rdata('stu_create_by_id');
+$stu_update_date= get_rdata('stu_update_date');
+$stu_update_by_id= get_rdata('stu_update_by_id');
+
+
+// Set success message based on msg ID
+$msg = get_rdata('msg', '');
+if (isset($msg) && $msg == 1) {
+    $successmsg = "Student Has Been Deleted Successfully";
+} else if (isset($msg) && $msg == 2) {
+    $successmsg = "Student Has Been Added Successfully";
+} else if (isset($msg) && $msg == 3) {
+    $successmsg = "Student Has Been Updated Successfully";
+} else {
+    $successmsg = '';
+}
+
+
+$total_rows = '';
+$page = get_rdata("page", 1);
+$per_page = get_rdata('per_page', PER_PAGE);
+$order_by = get_rdata('order_by', ' stu_first_name ,  stu_last_name ');
+$order = get_rdata('order', 'asc');
+$client_arrow = $stu_first_name_arrow = $stu_first_name_arrow = 'glyphicon glyphicon-chevron-down';
+if ($order == 'asc') {
+    $order = 'desc';
+    if ($order_by == 'stu_first_name') {
+        $stu_first_name_arrow = 'glyphicon glyphicon-chevron-up';
+    } else {
+        $client_arrow = 'glyphicon glyphicon-chevron-up';
+    }
+} else {
+    $order = 'asc';
+}
+if (isset($_GET['page'])) {
+    $srNo = $per_page * ($_GET['page'] - 1);
+} else {
+    $srNo = 0;
+}
+
+// step 3: make new object of user class
+// delete user code
+if ($act == 'delete' && $id != 0) {
+
+            $sm_student = new student();
+            $sm_student->action = 'delete';
+
+            $del_where = "stu_id = ". $id;
+            if (session_get('admin_login_type') == 'school') {
+                    $del_where.=" and stu_sc_id= " . session_get('admin_sc_id');
+            }
+            $sm_student->where = $del_where;
+
+
+            $result = $sm_student->process();
+            if ($result['status']=='failure')
+            {
+                  $errormsg = $result['errormsg'];
+            }
+            else
+            {
+                    $successmsg = "Student Has Been Deleted Successfully";
+            }
+}
+
+
+//searching and pagination
+$condition = '1';
+if ($stu_gr_no != '') {
+    $condition.=" and 	stu_gr_no LIKE '%" . $stu_gr_no . "%'";
+}
+if ($stu_first_name != '') {
+    $condition.=" and 	stu_first_name LIKE '%" . $stu_first_name . "%'";
+}
+if ($stu_last_name != '') {
+    $condition.=" and 	stu_last_name LIKE '%" . $stu_last_name . "%'";
+}
+
+if ($tmp_type != 'admin') {
+    $condition.=" and stu_br_id= " . $tmp_admin_id;
+}
+
+$condition.=" order by " . $order_by . ' ' . $order;
+$table = "sm_student ";
+// echo "SELECT * FROM ".$table. " WHERE " .$condition;
+$pageObj = new PS_Pagination($table, '*', "$condition", $per_page, 10, "per_page=" . $per_page . "&stu_first_name=" . $stu_first_name . "&order by=" . $order_by . "&order=" . $order);
+$objData = $pageObj->paginate();
+$total_rows = $pageObj->totRows();
+
+//get total records from project table
+// $sm_student = new student();
+//$sm_student->cquery = "select * from $table WHERE $condition";
+//$sm_student->action = 'get';
+//$result = $sm_student->process();
+//if ($result['status'] == 'failure') {
+//    $errormsg = $result['errormsg'];
+//} else {
+//    if ($result['count'] > 0) {
+//        $total_rows = $result['count'];
+//    }
+//}
+?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+    <head>
+        <meta charset="UTF-8" />
+        <meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalabel=no" name="viewport"/>
+        <title><?php echo $page_title; ?></title>
+        <?php include("includes/include_files.php"); ?>
+    </head>
+    <body class="skin-green sidebar-mini">
+        <div class="wrapper">
+            <?php include("includes/header.php"); ?>
+            <?php include("includes/left_menu.php"); ?>
+
+            <div class="content-wrapper">
+
+                <!-- Content Header (Page header) -->
+                <section class="content-header">
+                    <h1>
+                        Manage Student
+                    </h1>
+                    <ol class="breadcrumb">
+                        <li><a href="#"><i class="fa fa-dashboard"></i> Home</a></li>
+                        <li class="active">Manage Student</li>
+                    </ol>
+                </section>
+
+                <!-- Main content -->
+                <section class="content">
+                    <?php include("includes/messages.php"); ?>
+                    <!-- Small boxes (Stat box) -->
+                    <div class="row">
+                        <div class="col-lg-12 col-xs-12">
+                            <div class="box box-info">
+                                <div class="box-header with-border">
+                                    <h3 class="box-title">Search</h3>
+                                </div>
+                                <!-- /.box-header -->
+                                <!-- form start -->
+                                <form class="form-horizontal" name="form1" id="form1" method="post" onsubmit="return validate_add_edit_form();">
+                                    <input type="hidden" name="act" id="act">
+                 		<input type="hidden" value="0" name="id" id="id">
+                                    <div class="box-body">
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label class="col-sm-3 control-label">GR No</label>
+                                                <div class="col-sm-9">
+                                                    <input type="text" name="stu_gr_no" id="stu_gr_no"  placeholder="Enter GR No" value="<?php echo $stu_gr_no; ?>" class="form-control" />
+                                                </div>
+                                            </div>
+                                            <div class="form-group">
+                                                <label class="col-sm-3 control-label">First Name</label>
+                                                <div class="col-sm-9">
+                                                    <input type="text" name="stu_first_name" id="stu_first_name"  placeholder="Enter First Name" value="<?php echo $stu_first_name; ?>" class="form-control" />
+                                                </div>
+                                            </div>
+                                            <div class="form-group">
+                                                <label class="col-sm-3 control-label">Last Name</label>
+                                                <div class="col-sm-9">
+                                                    <input type="text" name="stu_last_name" id="stu_last_name"  placeholder="Enter Last Name" value="<?php echo $stu_last_name; ?>" class="form-control" />
+                                                </div>
+                                            </div>
+
+
+
+                                        </div>
+                                    </div><!-- /.box-body -->
+                                    <div class="box-footer">
+                                        <button type="submit" class="btn btn-info">Search</button>
+                                        <button type="button" class="btn btn-default" onclick="window.location.href = 'manage_student.php'">Cancel</button>
+                                    </div><!-- /.box-footer -->
+                                </form>
+                            </div>
+
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-xs-12">
+                            <div class="box">
+                                <div class="box-body">
+                                    <table id="example2" class="table table-bordered table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th align="center" width="70px">Sr.No</th>
+                                                <th align="center" >GR.No</th>
+
+                                                <th align="center"><a href="manage_student.php?page=<?php echo $page; ?>&per_page=<?php echo $per_page; ?>&order_by=stu_first_name&order=<?php echo $order; ?>">First Name <span class="<?php echo $stu_first_name_arrow; ?>"></span></a></th>
+                                                <th align="center" >Last  Name</th>
+                                                <th align="center" >Phone</th>
+                                                <th align="center" >Email</th>
+                                                <th align="center" width="10px">Status</th>
+                                                <th align="center" class="t_align_center"  width="180px">Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <?php
+                                            $class = '';
+                                            if ($objData) {
+                                                for ($i = 1; $db_row = $objData->fetch(); $i++) {
+                                                    $srNo++;
+                                                    if ($i % 2 == 0) {
+                                                        $class = 'even';
+                                                    } else {
+                                                        $class = 'odd';
+                                                    }
+
+
+
+
+
+                                                    ?>
+                                                    <tr class="<?php echo $class; ?>">
+                                                        <td><center><?php echo $srNo; ?></center></td>
+                                                        <td style="padding-left:10px;"><?php echo $db_row['stu_gr_no']; ?></td>
+
+                                                        <td style="padding-left:10px;"><?php echo $db_row['stu_first_name']; ?></td>
+                                                        <td style="padding-left:10px;"><?php echo $db_row['stu_last_name']; ?></td>
+                                                        <td style="padding-left:10px;"><?php echo $db_row['stu_phone']; ?></td>
+                                                        <td style="padding-left:10px;"><?php echo $db_row['stu_email']; ?></td>
+                                                        <td style="padding-left:10px;"><?php echo ($db_row['stu_status']=='A'?'Active':'Inactive'); ?></td>
+                                                        <td><center><a href="add_edit_student.php?id=<?php echo $db_row['stu_id']; ?>&per_page=<?php echo $per_page; ?>" class="text-success glyphicon glyphicon-pencil" ></a>&nbsp;
+                                                                <a href="javascript:void(0);" class="text-danger glyphicon glyphicon-remove" data-toggle="modal" data-target="#ConfirmDelete" onclick="delete_record(<?php echo $db_row['stu_id']; ?>,'Student')"></a>&nbsp;
+
+                                                            <a href="add_edit_student_course.php?sc_stu_id=<?php echo $db_row['stu_id']; ?>" class="text-primary fa fa-fw fa-plus" ></a>
+                                                            <a href="manage_student_course.php?sc_stu_id=<?php echo $db_row['stu_id']; ?>" class="text-info fa fa-fw fa-tasks" ></a>
+                                                            </center></td>
+                                                    </tr>
+                                                    <?php
+                                                }
+                                            } else {
+                                                echo '<tr class="gradeA"><td class="center" style="text-align:center;" colspan="11">No records found or you have not permission to access these records.</td></tr>';
+                                            }
+                                            ?>
+                                        </tbody>
+                                    </table>
+                                    <?php if ($objData) { ?>
+                                    <div class="row">
+                                        <div class="col-lg-4 col-md-4 col-sm-4 col-xs-12 mt20 mb20">
+                                            <?php
+                                                $page = 1;
+                                                if (isset($_GET['page'])) {
+                                                    $page = $_GET['page'];
+                                                }
+                                                if ($page > 0 && ($page > ceil($total_rows / $per_page))) {
+                                                    $f_line = 1;
+                                                    $page = 1;
+                                                } else {
+                                                    $f_line = ($page - 1) * $per_page + 1;
+                                                }
+                                                ?>
+                                                <?php $l_line = $page * $per_page; ?>
+                                                Showing
+                                                <?php
+                                                if ($f_line < $total_rows) {
+                                                    echo ($page - 1) * $per_page + 1;
+                                                } else {
+                                                    echo $total_rows;
+                                                }
+                                                ?>
+                                                to
+                                                <?php
+                                                if ($l_line < $total_rows) {
+                                                    echo $page * $per_page;
+                                                } else {
+                                                    echo $total_rows;
+                                                }
+                                                ?>
+                                                of <?php echo $total_rows ?> entries
+                                        </div>
+                                        <div class="col-lg-8 col-md-8 col-sm-8 col-xs-12">
+                                            <div class="pull-right">
+                                            <ul class="pagination">
+                                                <?php echo $pageObj->renderFullNav(); ?>
+                                            </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <?php } ?>
+                                </div>
+                            </div>
+                        </div>
+                </section>
+            </div>
+            <?php include("includes/footer.php"); ?>
+        </div>
+    </body>
+</html>
