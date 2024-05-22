@@ -249,55 +249,101 @@ if (!function_exists("output_file")) {
 
 }
 
-function m_process($action, $query_a) {
-    global $dbh, $c_file;
-    // fetchAll()
-    $dbh->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-    //$dbh->beginTransaction();
-    if ($action == 'get_data') {
-        try {
-            $sth1 = $dbh->prepare($query_a);
-            $sth1->execute();
-            $dbh->commit();
-            $result = array("errormsg" => "", "id" => 0, "status" => "success", "res" => $sth1->fetchAll(PDO::FETCH_ASSOC), "count" => $sth1->rowCount());
-        } catch (Exception $e) {
-            $dbh->rollBack();
-            $result = array("errormsg" => $e->getMessage(), "status" => "failure");
+    // function m_process($action, $query_a) {
+    //     global $dbh, $c_file;
+    //     // fetchAll()
+    //     $dbh->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    //     // $dbh->beginTransaction();
+    //     if ($action == 'get_data') {
+    //         try {
+    //             $sth1 = $dbh->prepare($query_a);
+    //             $sth1->execute();
+    //             $dbh->commit();
+    //             $result = array("errormsg" => "", "id" => 0, "status" => "success", "res" => $sth1->fetchAll(PDO::FETCH_ASSOC), "count" => $sth1->rowCount());
+    //         } catch (Exception $e) {
+    //             $dbh->rollBack();
+    //             $result = array("errormsg" => $e->getMessage(), "status" => "failure");
+    //         }
+    //     } else if ($action == 'insert') {
+    //         try {
+    //             $dbh->exec($query_a);
+    //             $result = array("errormsg" => "", "id" => $dbh->lastInsertId(), "status" => "success");
+    //             $dbh->commit();
+    //         } catch (Exception $e) {
+    //             $dbh->rollBack();
+    //             $result = array("errormsg" => $e->getMessage(), "status" => "failure");
+    //         }
+    //     } else if ($action == 'update') {
+    //         try {
+    //             $dbh->exec($query_a);
+    //             $result = array("errormsg" => "", "id" => 0, "status" => "success");
+    //             $dbh->commit();
+    //         } catch (Exception $e) {
+    //             $dbh->rollBack();
+    //             $result = array("errormsg" => $e->getMessage(), "status" => "failure");
+    //         }
+    //     } else if ($action == 'delete') {
+    //         try {
+    //             $dbh->exec($query_a);
+    //             $result = array("errormsg" => "", "id" => 0, "status" => "success");
+    //             $dbh->commit();
+    //         } catch (Exception $e) {
+    //             $dbh->rollBack();
+    //             $result = array("errormsg" => $e->getMessage(), "status" => "failure");
+    //         }
+    //     }
+    //     if (IS_LOCAL == TRUE) {
+    //         add_log_txt($c_file . '--' . $query_a);
+    //     }
+    //     //  add_log_txt($query_a);
+    //     return $result;
+    // }
+        // Jenish Method
+        function m_process($action, $query_a) {
+            global $dbh, $c_file;
+        
+            $dbh->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        
+            try {
+                // Start a new transaction
+                if (!$dbh->inTransaction()) {
+                    $dbh->beginTransaction();
+                }
+        
+                if ($action == 'get_data') {
+                    $sth1 = $dbh->prepare($query_a);
+                    $sth1->execute();
+                    $result = array("errormsg" => "", "id" => 0, "status" => "success", "res" => $sth1->fetchAll(PDO::FETCH_ASSOC), "count" => $sth1->rowCount());
+                } else if ($action == 'insert') {
+                    $dbh->exec($query_a);
+                    $result = array("errormsg" => "", "id" => $dbh->lastInsertId(), "status" => "success");
+                } else if ($action == 'update') {
+                    $dbh->exec($query_a);
+                    $result = array("errormsg" => "", "id" => 0, "status" => "success");
+                } else if ($action == 'delete') {
+                    $dbh->exec($query_a);
+                    $result = array("errormsg" => "", "id" => 0, "status" => "success");
+                }
+        
+                // Commit the transaction if all actions succeed
+                if ($dbh->inTransaction()) {
+                    $dbh->commit();
+                }
+        
+            } catch (Exception $e) {
+                // Rollback the transaction if something goes wrong
+                if ($dbh->inTransaction()) {
+                    $dbh->rollBack();
+                }
+                $result = array("errormsg" => $e->getMessage(), "status" => "failure");
+            }
+        
+            if (IS_LOCAL == TRUE) {
+                add_log_txt($c_file . '--' . $query_a);
+            }
+        
+            return $result;
         }
-    } else if ($action == 'insert') {
-        try {
-            $dbh->exec($query_a);
-            $result = array("errormsg" => "", "id" => $dbh->lastInsertId(), "status" => "success");
-            $dbh->commit();
-        } catch (Exception $e) {
-            $dbh->rollBack();
-            $result = array("errormsg" => $e->getMessage(), "status" => "failure");
-        }
-    } else if ($action == 'update') {
-        try {
-            $dbh->exec($query_a);
-            $result = array("errormsg" => "", "id" => 0, "status" => "success");
-            $dbh->commit();
-        } catch (Exception $e) {
-            $dbh->rollBack();
-            $result = array("errormsg" => $e->getMessage(), "status" => "failure");
-        }
-    } else if ($action == 'delete') {
-        try {
-            $dbh->exec($query_a);
-            $result = array("errormsg" => "", "id" => 0, "status" => "success");
-            $dbh->commit();
-        } catch (Exception $e) {
-            $dbh->rollBack();
-            $result = array("errormsg" => $e->getMessage(), "status" => "failure");
-        }
-    }
-    if (IS_LOCAL == TRUE) {
-        add_log_txt($c_file . '--' . $query_a);
-    }
-    //  add_log_txt($query_a);
-    return $result;
-}
 
 // SELECT count(*) as count_s FROM
 function found_duplicate_free($q) {
