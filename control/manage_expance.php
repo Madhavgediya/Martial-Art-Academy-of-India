@@ -15,7 +15,7 @@ if (!$conn) {
 }
 
 // Query to fetch data from sm_expence_payment table
-$query = "SELECT * FROM sm_income_payment";
+$query = "SELECT * FROM sm_expance_payment";
 $result = mysqli_query($conn, $query);
 
 // Check if query executed successfully
@@ -24,8 +24,8 @@ if (!$result) {
 }
 
 $pt_type = get_rdata('pt_type');
-$page_title = "Manage income";
-$page_open = 'add_edit_income.php';
+$page_title = "Manage Expance";
+$page_open = 'add_edit_expance.php';
 $errormsg = get_rdata('errormsg', '');
 
 $id = get_rdata("id", 0);
@@ -70,18 +70,18 @@ if (isset($_GET['page'])) {
 // step 3: make new object of user class
 // delete user code
 if ($act == 'delete' && $id != 0) {
-    $delete_q = "DELETE FROM sm_income_payment WHERE pt_br_id = $tmp_admin_id AND pt_id = $id";
+    $delete_q = "DELETE FROM sm_expance_payment WHERE pt_br_id = $tmp_admin_id AND pt_id = $id";
     $delete_r = m_process("delete", $delete_q);
     if ($delete_r['status'] == 'failure') {
         $errormsg = $delete_r['errormsg'];
     } else {
-        $successmsg = "income Has Been Deleted Successfully";
+        $successmsg = "Expance Has Been Deleted Successfully";
     }
 }
 
 
 //searching and pagination
-$condition = ' (pt_tran_u_type = "income" ) AND pt_br_id = ' . $tmp_admin_id;
+$condition = ' (pt_tran_u_type = "Expance" ) AND pt_br_id = ' . $tmp_admin_id;
 if ($pt_sc_id != '') {
     $condition .= " and pt_sc_id = '" . $pt_sc_id . "'";
 }
@@ -95,7 +95,7 @@ if ($pt_iet_id != '') {
 
 
 $condition .= " order by " . $order_by . ' ' . $order;
-$table = "  sm_income_payment INNER JOIN sm_account ON (ac_id=pt_sc_id) INNER JOIN sm_income_expance_type ON (pt_iet_id = iet_id) ";
+$table = "  sm_expance_payment INNER JOIN sm_account ON (ac_id=pt_sc_id) INNER JOIN sm_income_expance_type ON (pt_iet_id = iet_id) ";
 // echo "SELECT * FROM ".$table. " WHERE " .$condition;
 $pageObj = new PS_Pagination($table, '*', "$condition", $per_page, 10, "per_page=" . $per_page . "&pt_iet_id=" . $pt_iet_id . "&pt_sc_id=" . $pt_sc_id . "&pt_tran_remarks=" . $pt_tran_remarks . "&order by=" . $order_by . "&order=" . $order);
 $objData = $pageObj->paginate();
@@ -126,11 +126,11 @@ if ($order == 'asc') {
             <!-- Content Header (Page header) -->
             <section class="content-header">
                 <h1>
-                    Manage income
+                    Manage Expance
                 </h1>
                 <ol class="breadcrumb">
                     <li><a href="#"><i class="fa fa-dashboard"></i> Home</a></li>
-                    <li class="active">Manage income</li>
+                    <li class="active">Manage Expance</li>
                 </ol>
             </section>
 
@@ -196,7 +196,7 @@ if ($order == 'asc') {
                                             <div class="col-sm-9">
                                                 <select id="pt_type" name="pt_type" class="form-control">
                                                     <option value="">All</option>
-                                                    <option <?php if ($pt_type == 'Credit') echo ' selected="selected" '; ?> value="Credit">Income</option>
+                                                    <option <?php if ($pt_type == 'Debit') echo ' selected="selected" '; ?> value="Debit">Expance</option>
                                                 </select>
                                             </div>
                                         </div>
@@ -213,7 +213,7 @@ if ($order == 'asc') {
                                 </div><!-- /.box-body -->
                                 <div class="box-footer">
                                     <button type="submit" class="btn btn-info">Search</button>
-                                    <button type="button" class="btn btn-default" onclick="window.location.href = 'manage_income.php'">Cancel</button>
+                                    <button type="button" class="btn btn-default" onclick="window.location.href = 'manage_expance.php'">Cancel</button>
                                     <button type="button" style="float:right;" class="btn btn-success" onclick="window.location.href='<?php echo $page_open; ?>'">ADD</button>
                                 </div><!-- /.box-footer -->
                             </form>
@@ -276,9 +276,9 @@ if ($order == 'asc') {
 
                                                 <td style="padding-left:10px;">
                                                     <center><a href="add_edit_<?php echo strtolower($db_row['pt_tran_u_type']); ?>.php?id=<?php echo $db_row['pt_id']; ?>&per_page=<?php echo $per_page; ?>" class="text-success glyphicon glyphicon-pencil"></a>&nbsp;
-                                                        <a href="javascript:void(0);" data-toggle="modal" data-target="#ConfirmDelete" class="text-danger glyphicon glyphicon-remove" onclick="delete_record(<?php echo $db_row['pt_id']; ?>,'Income')"></a>
+                                                        <a href="javascript:void(0);" data-toggle="modal" data-target="#ConfirmDelete" class="text-danger glyphicon glyphicon-remove" onclick="delete_record(<?php echo $db_row['pt_id']; ?>,'Expance')"></a>
 
-                                                        <a href="javascript:void(0);" class="text-success fa fa-fw fa-print" onclick="print_fee_receipt('Income',<?php echo $db_row['pt_id']; ?>,0)"></a>
+                                                        <a href="javascript:void(0);" class="text-success fa fa-fw fa-print" onclick="print_fee_receipt('Expance',<?php echo $db_row['pt_id']; ?>,0)"></a>
 
                                                     </center>
                                                 </td>

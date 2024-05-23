@@ -3,23 +3,21 @@ include("includes/application_top.php");
 include("../includes/class/account.php");
 
 // Set the caption of button
-
-
 $id = get_rdata("id", 0);
 $pt_stu_id = get_rdata("pt_stu_id", 0);
 $act = get_rdata("act");
 
 $pt_sc_id = get_rdata('pt_sc_id');
-$pt_type = get_rdata('pt_type', 'Income');
 $pt_tran_mode_of_payent = get_rdata('pt_tran_mode_of_payent', 'Cash');
 $pt_tran_date = get_rdata('pt_tran_date', $cur_date);
 $pt_tran_no = get_rdata('pt_tran_no');
 $pt_tran_bank = get_rdata('pt_tran_bank');
 $pt_tran_amount = get_rdata('pt_tran_amount', 0);
-$pt_iet_id = get_rdata('pt_iet_id', '');
+$pt_tran_u_type = get_rdata('pt_tran_u_type'); // Retrieve transaction type
 $pt_tran_remarks = get_rdata('pt_tran_remarks');
 $pt_receipt_no = get_rdata('pt_receipt_no', 0);
 $pt_br_id = get_rdata('pt_br_id', $tmp_admin_id);
+$pt_voucher_no = get_rdata('pt_voucher_no'); // Retrieve voucher number
 
 $pt_create_date = $cur_date;
 $pt_create_by_id = $tmp_admin_id;
@@ -40,110 +38,69 @@ $errormsg = get_rdata('errormsg', '');
 // Get the data from form.
 $per_page = get_rdata('per_page', PER_PAGE);
 
-
-
-// Get the data from database
-if ($act == '' && $id != 0) {
-    $payment_q = "SELECT * FROM sm_payment_transaction WHERE pt_id = $id";
-
-
-    $payment_r = m_process("get_data", $payment_q);
-    if ($payment_r['status'] == 'failure') {
-        $errormsg = $payment_r['errormsg'];
-    } else {
-        if ($payment_r['count'] > 0) {
-            foreach ($payment_r['res'] as $db_row) {
-                $pt_tran_u_type = $db_row['pt_tran_u_type'];
-
-                $pt_type = 'Income';
-                if ($db_row['pt_type'] == 'Debit')
-                    $pt_type = 'Expance';
-
-                $pt_tran_bank = $db_row['pt_tran_bank'];
-                $pt_tran_mode_of_payent = $db_row['pt_tran_mode_of_payent'];
-                $pt_iet_id = $db_row['pt_iet_id'];
-                $pt_tran_no = $db_row['pt_tran_no'];
-                $pt_tran_amount = $db_row['pt_tran_amount'];
-                $pt_receipt_no = $db_row['pt_receipt_no'];
-                $pt_stu_id = $db_row['pt_stu_id'];
-                $pt_tran_date = DBtoDisp($db_row['pt_tran_date']);
-                $pt_tran_remarks = $db_row['pt_tran_remarks'];
-                $pt_sc_id = $db_row['pt_sc_id'];
-                $pt_br_id = $db_row['pt_br_id'];
-            }
-        }
-    }
-}
-
 // Add user entry
 if ($act == 'add') {
-
     $data = array();
-    $data["pt_type"] = ($pt_type == 'Income') ? "Credit" : "Debit";
-    $data["pt_tran_u_type"] = $pt_type;
+    $data["pt_voucher_no"] = $pt_voucher_no; // Include voucher number in data array
     $data["pt_tran_bank"] = $pt_tran_bank;
     $data["pt_tran_mode_of_payent"] = $pt_tran_mode_of_payent;
-    $data["pt_iet_id"] = $pt_iet_id;
+    $data["pt_tran_u_type"] = $pt_tran_u_type; // Include transaction type in data array
     $data["pt_tran_no"] = $pt_tran_no;
     $data["pt_tran_amount"] = $pt_tran_amount;
     $data["pt_receipt_no"] = 0;
-    $data["pt_receipt_no_expance"] = get_receipt_no($tmp_admin_id, 'Expance');
+    $data["pt_receipt_no_income"] = get_receipt_no($tmp_admin_id, 'Expance');
     $data["pt_stu_id"] = 0;
     $data["pt_discount_amount"] = 0;
     $data["pt_tran_date"] = disptoDB($pt_tran_date);
-    $data["pt_tran_remarks"] =  $pt_tran_remarks;
+    $data["pt_tran_remarks"] = $pt_tran_remarks;
     $data["pt_sc_id"] = $pt_sc_id;
     $data["pt_br_id"] = $pt_br_id;
     $data["pt_create_date"] = $cur_date;
     $data["pt_create_by_id"] = $tmp_admin_id;
-
     $data["pt_update_date"] = $cur_date;
     $data["pt_update_by_id"] = $tmp_admin_id;
 
-    $add_fees_result = db_perform("sm_payment_transaction", $data, 'insert', '', '', '');
+    $add_income_result = db_perform("sm_expance_payment", $data, 'insert', '', '', '');
 
-    if ($add_fees_result["errormsg"] != '') {
-        $errormsg = $add_fees_result["errormsg"];
+    if ($add_income_result["errormsg"] != '') {
+        $errormsg = $add_income_result["errormsg"];
     } else {
-        header('Location:manage_income_expance.php?pt_type=Debit&msg=2&page=1&per_page=' . $per_page);
+        // header('Location:manage_income_expance.php?pt_type=Credit&msg=2&page=1&per_page=' . $per_page);
+        header('Location:manage_expance.php');
         exit(0);
     }
 }
 
 // Update user entry
 if ($act == 'update') {
-
     $data = array();
-    $data["pt_type"] = ($pt_type == 'Income') ? "Credit" : "Debit";
-    $data["pt_tran_u_type"] = $pt_type;
+    $data["pt_voucher_no"] = $pt_voucher_no; // Include voucher number in data array
     $data["pt_tran_bank"] = $pt_tran_bank;
     $data["pt_tran_mode_of_payent"] = $pt_tran_mode_of_payent;
-    $data["pt_iet_id"] = $pt_iet_id;
+    $data["pt_tran_u_type"] = $pt_tran_u_type; // Include transaction type in data array
     $data["pt_tran_no"] = $pt_tran_no;
     $data["pt_tran_amount"] = $pt_tran_amount;
-    // $data["pt_receipt_no"] = $pt_receipt_no;
     $data["pt_stu_id"] = 0;
     $data["pt_discount_amount"] = 0;
     $data["pt_tran_date"] = disptoDB($pt_tran_date);
-    $data["pt_tran_remarks"] =  $pt_tran_remarks;
+    $data["pt_tran_remarks"] = $pt_tran_remarks;
     $data["pt_sc_id"] = $pt_sc_id;
     $data["pt_br_id"] = $pt_br_id;
     $data["pt_create_date"] = $cur_date;
     $data["pt_create_by_id"] = $tmp_admin_id;
-
     $data["pt_update_date"] = $cur_date;
     $data["pt_update_by_id"] = $tmp_admin_id;
 
-    $add_fees_result = db_perform("sm_payment_transaction", $data, 'update', "pt_id=$id", '', '');
+    $update_income_result = db_perform("sm_expance_payment", $data, 'update', "pt_id=$id", '', '');
 
-    if ($add_fees_result["errormsg"] != '') {
-        $errormsg = $add_fees_result["errormsg"];
+    if ($update_income_result["errormsg"] != '') {
+        $errormsg = $update_income_result["errormsg"];
     } else {
-        header('Location:manage_income_expance.php?pt_type=Debit&msg=3&page=1&per_page=' . $per_page);
+        // header('Location:manage_income_expance.php?pt_type=Credit&msg=3&page=1&per_page=' . $per_page);
+        header('Location:manage_expance.php');
         exit(0);
     }
 }
-// echo 'error'.$errormsg.'end of error';
 ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
@@ -192,13 +149,14 @@ if ($act == 'update') {
                                 <input type="hidden" id="pt_stu_id" name="pt_stu_id" value="<?php echo $pt_stu_id; ?>" />
                                 <input type="hidden" id="pt_br_id" name="pt_br_id" value="<?php echo $pt_br_id; ?>" />
                                 <input type="hidden" id="pt_receipt_no" name="pt_receipt_no" value="<?php echo $pt_receipt_no; ?>" />
-                                <input type="hidden" id="pt_type" name="pt_type" value="Expance" />
+                                <input type="hidden" id="pt_type" name="pt_type" value="Expance" /> 
                                 <div class="box-body">
+                                    
                                     <div class=" col-md-6">
-                                        <div class="form-group">
-                                            <label class="col-sm-3 control-label">Voucher Number</label>
+                                    <div class="form-group">
+                                        <label class="col-sm-3 control-label">Voucher Number</label>
                                             <div class="col-sm-6">
-                                                <input type="text" required id="pt_voucher_no" name="pt_voucher_no" value="MA0001" class="form-control" />
+                                             <input type="text" required id="pt_voucher_no" name="pt_voucher_no" value="<?php echo $pt_voucher_no; ?>" class="form-control" />
                                             </div>
                                         </div>
                                         <div class="form-group">
@@ -225,22 +183,22 @@ if ($act == 'update') {
 
                                         <div class="form-group">
                                             <label class="col-sm-3 control-label">Type</label>
-                                            <div class="col-sm-9">
-                                                <select required id="pt_iet_id" name="pt_iet_id" class="form-control">
-                                                    <option value="">--Please select--</option>
-                                                    <?php
-                                                    $data_arr_input = array();
-                                                    $data_arr_input['select_field'] = 'iet_name ,iet_id';
-                                                    $data_arr_input['table'] = 'sm_income_expance_type';
-                                                    $data_arr_input['where'] = " (iet_type = 'Both' OR iet_type = 'Expance') AND  iet_status  = 'A' and iet_br_id= $tmp_admin_id";
-                                                    $data_arr_input['key_id'] = 'iet_id';
-                                                    $data_arr_input['key_name'] = 'iet_name';
-                                                    $data_arr_input['current_selection_value'] = $pt_iet_id;
-                                                    display_dd_options($data_arr_input);
-                                                    ?>
-                                                </select>
-                                            </div>
+                                             <div class="col-sm-9">
+                                              <select required id="pt_iet_id" name="pt_iet_id" class="form-control">
+                                                <option value="">--Please select--</option>
+                                                <?php
+                                                $data_arr_input = array();
+                                                $data_arr_input['select_field'] = 'iet_name ,iet_id';
+                                                $data_arr_input['table'] = 'sm_income_expance_type';
+                                                $data_arr_input['where'] = " (iet_type = 'Both' OR iet_type = 'Expance') AND iet_status  = 'A' and iet_br_id= $tmp_admin_id";
+                                                $data_arr_input['key_id'] = 'iet_id';
+                                                $data_arr_input['key_name'] = 'iet_name';
+                                                $data_arr_input['current_selection_value'] = $pt_iet_id;
+                                                display_dd_options($data_arr_input);
+                                                ?>
+                                            </select>
                                         </div>
+                                    </div>
 
                                         <div class="form-group">
                                             <label class="col-sm-3 control-label">Payment Mode</label>
@@ -254,6 +212,8 @@ if ($act == 'update') {
                                                 </select>
                                             </div>
                                         </div>
+
+
 
                                         <div class="form-group">
                                             <label class="col-sm-3 control-label">Tran. Date</label>
@@ -371,3 +331,4 @@ if ($act == 'update') {
 </body>
 
 </html>
+

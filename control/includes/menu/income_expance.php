@@ -11,7 +11,10 @@
                     if ($c_file == 'manage_income_expance.php' && isset($_REQUEST["pt_type"]) && $_REQUEST["pt_type"]=='Credit') {
                         echo 'class="active"';
                     }
-                        ?>><a href="manage_income_expance.php?pt_type=Credit"><i class="fa fa-fw fa-server"></i>Manage Income</a></li>
+                        ?>>
+                        <!-- <a href="manage_income_expance.php?pt_type=Credit"><i class="fa fa-fw fa-server"></i>Manage Income</a> -->
+                        <a href="manage_income.php"><i class="fa fa-fw fa-server"></i>Manage Income</a>
+                    </li>
                         <li <?php
 
                     if ($c_file == 'manage_income_expance.php' && isset($_REQUEST["pt_type"]) && $_REQUEST["pt_type"]=='Debit') {
