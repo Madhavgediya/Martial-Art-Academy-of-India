@@ -237,7 +237,7 @@
                                     <span>Income</span> <i class="fa fa-angle-left pull-right"></i>
                                 </a>
                                 <ul class="treeview-menu">
-                                    <li><a href="manage_income_expance.php?pt_type=Credit">Manage Income</a></li>
+                                   <li><a href="manage_income.php">Manage Income</a></li>
                                 </ul>
                                 <ul class="treeview-menu">
                                     <li><a href="add_edit_income.php">Add Income</a></li>
@@ -251,7 +251,7 @@
                                     <span>Expense</span> <i class="fa fa-angle-left pull-right"></i>
                                 </a>
                                 <ul class="treeview-menu">
-                                    <li><a href="manage_income_expance.php">Manage Expense</a></li>
+                                    <li><a href="manage_expance.php">Manage Expense</a></li>
                                 </ul>
                                 <ul class="treeview-menu">
                                     <li><a href="add_edit_expance.php">Add Expense</a></li>

@@ -65,7 +65,8 @@ if ($act == 'add') {
     if ($add_income_result["errormsg"] != '') {
         $errormsg = $add_income_result["errormsg"];
     } else {
-        header('Location:manage_income_expance.php?pt_type=Credit&msg=2&page=1&per_page=' . $per_page);
+        // header('Location:manage_income_expance.php?pt_type=Credit&msg=2&page=1&per_page=' . $per_page);
+        header('Location:manage_income.php');
         exit(0);
     }
 }
@@ -95,7 +96,7 @@ if ($act == 'update') {
     if ($update_income_result["errormsg"] != '') {
         $errormsg = $update_income_result["errormsg"];
     } else {
-        header('Location:manage_income_expance.php?pt_type=Credit&msg=3&page=1&per_page=' . $per_page);
+        header('Location:manage_income.php');
         exit(0);
     }
 }
