@@ -275,7 +275,7 @@ if ($order == 'asc') {
 
 
                                                 <td style="padding-left:10px;">
-                                                    <center><a href="add_edit_<?php echo strtolower($db_row['pt_tran_u_type']); ?>.php?id=<?php echo $db_row['pt_id']; ?>&per_page=<?php echo $per_page; ?>" class="text-success glyphicon glyphicon-pencil"></a>&nbsp;
+                                                    <center><a href="add_edit_expance<?php echo strtolower($db_row['pt_tran_u_type']); ?>.php?id=<?php echo $db_row['pt_id']; ?>&per_page=<?php echo $per_page; ?>" class="text-success glyphicon glyphicon-pencil"></a>&nbsp;
                                                         <a href="javascript:void(0);" data-toggle="modal" data-target="#ConfirmDelete" class="text-danger glyphicon glyphicon-remove" onclick="delete_record(<?php echo $db_row['pt_id']; ?>,'Expance')"></a>
 
                                                         <a href="javascript:void(0);" class="text-success fa fa-fw fa-print" onclick="print_fee_receipt('Expance',<?php echo $db_row['pt_id']; ?>,0)"></a>

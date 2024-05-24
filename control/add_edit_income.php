@@ -2,34 +2,123 @@
 include("includes/application_top.php");
 include("../includes/class/account.php");
 
+$servername = "localhost";
+$username = "root";
+$password = "";
+$database = "dbkkw4rfsaxdu5";
+
+// Create connection
+$conn = new mysqli($servername, $username, $password, $database);
+
+// Check connection
+if ($conn->connect_error) {
+    die("Connection failed: " . $conn->connect_error);
+}
+
+function padNumber($number, $length) {
+    return str_pad($number, $length, '0', STR_PAD_LEFT);
+}
+
+function generateNumber($lastNumber, $prefix = 'MA') {
+    $newNumber = 1;
+    if ($lastNumber) {
+        $newNumber = intval(substr($lastNumber, strlen($prefix))) + 1;
+    }
+    return $prefix . padNumber($newNumber, 4);
+}
+
+function validateNumber($number) {
+    return preg_match('/^MA\d{4}$/', $number);
+}
+
+function checkDuplicate($number, $conn) {
+    $stmt = $conn->prepare("SELECT * FROM sm_income_payment WHERE pt_voucher_no = ?");
+    $stmt->bind_param("s", $number);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $duplicate = $result->num_rows > 0;
+    $stmt->close();
+    return $duplicate;
+}
+
+function generateAndStoreNumber($conn, $voucherNumber = '') {
+    if ($voucherNumber) {
+        if (!validateNumber($voucherNumber)) {
+            return "Invalid voucher number format. Please provide a valid voucher number in the format MA0000.";
+        }
+        if (checkDuplicate($voucherNumber, $conn)) {
+            return "Voucher number already exists. Please choose a different one.";
+        }
+        return $voucherNumber;
+    } else {
+        $lastNumber = ''; // Retrieve the last number from the database if needed
+        $newNumber = generateNumber($lastNumber);
+        while (checkDuplicate($newNumber, $conn)) {
+            $newNumber = generateNumber($newNumber);
+        }
+        return $newNumber;
+    }
+}
+
 // Set the caption of button
 $id = get_rdata("id", 0);
 $pt_stu_id = get_rdata("pt_stu_id", 0);
 $act = get_rdata("act");
 
-$pt_sc_id = get_rdata('pt_sc_id');
-$pt_tran_mode_of_payent = get_rdata('pt_tran_mode_of_payent', 'Cash');
-$pt_tran_date = get_rdata('pt_tran_date', $cur_date);
-$pt_tran_no = get_rdata('pt_tran_no');
-$pt_tran_bank = get_rdata('pt_tran_bank');
-$pt_tran_amount = get_rdata('pt_tran_amount', 0);
-$pt_tran_u_type = get_rdata('pt_tran_u_type'); // Retrieve transaction type
-$pt_tran_remarks = get_rdata('pt_tran_remarks');
-$pt_receipt_no = get_rdata('pt_receipt_no', 0);
-$pt_br_id = get_rdata('pt_br_id', $tmp_admin_id);
-$pt_voucher_no = get_rdata('pt_voucher_no'); // Retrieve voucher number
-
+// Initialize variables
+$pt_voucher_no = '';
+$pt_sc_id = '';
+$pt_tran_mode_of_payent = 'Cash';
+$pt_tran_date = $cur_date;
+$pt_tran_no = '';
+$pt_tran_bank = '';
+$pt_tran_amount = 0;
+$pt_tran_u_type = '';
+$pt_tran_remarks = '';
+$pt_receipt_no = 0;
+$pt_br_id = $tmp_admin_id;
 $pt_create_date = $cur_date;
 $pt_create_by_id = $tmp_admin_id;
 $pt_update_date = $cur_date;
 $pt_update_by_id = $tmp_admin_id;
 
-$caption = "Add Income";
-$btn_caption = "Add Income";
+// Fetch existing data if editing
 if ($id != 0) {
-    $caption = "Edit Income";
-    $btn_caption = "Edit Income";
+    $stmt = $conn->prepare("SELECT * FROM sm_income_payment WHERE pt_id = ?");
+    $stmt->bind_param("i", $id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    if ($row = $result->fetch_assoc()) {
+        $pt_voucher_no = $row['pt_voucher_no'];
+        $pt_sc_id = $row['pt_sc_id'];
+        $pt_tran_mode_of_payent = $row['pt_tran_mode_of_payent'];
+        $pt_tran_date = $row['pt_tran_date'];
+        $pt_tran_no = $row['pt_tran_no'];
+        $pt_tran_bank = $row['pt_tran_bank'];
+        $pt_tran_amount = $row['pt_tran_amount'];
+        $pt_tran_u_type = $row['pt_tran_u_type'];
+        $pt_tran_remarks = $row['pt_tran_remarks'];
+        $pt_receipt_no = $row['pt_receipt_no'];
+        $pt_br_id = $row['pt_br_id'];
+        $pt_create_date = $row['pt_create_date'];
+        $pt_create_by_id = $row['pt_create_by_id'];
+        $pt_update_date = $row['pt_update_date'];
+        $pt_update_by_id = $row['pt_update_by_id'];
+    }
+    $stmt->close();
+} else {
+    // Generate the voucher number if adding a new record
+    $voucherInput = isset($_POST['voucherNumber']) ? $_POST['voucherNumber'] : '';
+    $pt_voucher_no = generateAndStoreNumber($conn, $voucherInput);
+
+    if (strpos($pt_voucher_no, 'Invalid') !== false || strpos($pt_voucher_no, 'exists') !== false) {
+        die($pt_voucher_no);
+    }
 }
+
+$caption = $id != 0 ? "Edit Income" : "Add Income";
+$btn_caption = $id != 0 ? "Edit Income" : "Add Income";
+
 // Set Page Title
 $page_title = $caption;
 $successmsg = get_rdata('successmsg', '');
@@ -38,69 +127,67 @@ $errormsg = get_rdata('errormsg', '');
 // Get the data from form.
 $per_page = get_rdata('per_page', PER_PAGE);
 
-// Add user entry
-if ($act == 'add') {
+// Add or update user entry
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Retrieve form data from POST
+    $pt_voucher_no = $_POST['voucherNumber'];
+    $pt_tran_mode_of_payent = $_POST['pt_tran_mode_of_payent'];
+    $pt_tran_date = $_POST['pt_tran_date'];
+    $pt_tran_no = $_POST['pt_tran_no'];
+    $pt_tran_bank = $_POST['pt_tran_bank'];
+    $pt_tran_amount = $_POST['pt_tran_amount'];
+    $pt_tran_remarks = $_POST['pt_tran_remarks'];
+    $pt_sc_id = $_POST['pt_sc_id'];
+    $pt_br_id = $tmp_admin_id;
+    $pt_create_date = $cur_date;
+    $pt_create_by_id = $tmp_admin_id;
+    $pt_update_date = $cur_date;
+    $pt_update_by_id = $tmp_admin_id;
+
     $data = array();
-    $data["pt_voucher_no"] = $pt_voucher_no; // Include voucher number in data array
+    $data["pt_voucher_no"] = $pt_voucher_no;
     $data["pt_tran_bank"] = $pt_tran_bank;
     $data["pt_tran_mode_of_payent"] = $pt_tran_mode_of_payent;
-    $data["pt_tran_u_type"] = $pt_tran_u_type; // Include transaction type in data array
+    $data["pt_tran_u_type"] = $pt_tran_u_type;
     $data["pt_tran_no"] = $pt_tran_no;
     $data["pt_tran_amount"] = $pt_tran_amount;
-    $data["pt_receipt_no"] = 0;
-    $data["pt_receipt_no_income"] = get_receipt_no($tmp_admin_id, 'Income');
-    $data["pt_stu_id"] = 0;
-    $data["pt_discount_amount"] = 0;
     $data["pt_tran_date"] = disptoDB($pt_tran_date);
     $data["pt_tran_remarks"] = $pt_tran_remarks;
     $data["pt_sc_id"] = $pt_sc_id;
     $data["pt_br_id"] = $pt_br_id;
-    $data["pt_create_date"] = $cur_date;
-    $data["pt_create_by_id"] = $tmp_admin_id;
-    $data["pt_update_date"] = $cur_date;
-    $data["pt_update_by_id"] = $tmp_admin_id;
+    $data["pt_create_date"] = $pt_create_date;
+    $data["pt_create_by_id"] = $pt_create_by_id;
+    $data["pt_update_date"] = $pt_update_date;
+    $data["pt_update_by_id"] = $pt_update_by_id;
 
-    $add_income_result = db_perform("sm_income_payment", $data, 'insert', '', '', '');
+    if ($act == 'add') {
+        $data["pt_receipt_no_income"] = get_receipt_no($tmp_admin_id, 'Income');
+        $add_income_result = db_perform("sm_income_payment", $data, 'insert', '', '', '');
 
-    if ($add_income_result["errormsg"] != '') {
-        $errormsg = $add_income_result["errormsg"];
-    } else {
-        // header('Location:manage_income_expance.php?pt_type=Credit&msg=2&page=1&per_page=' . $per_page);
-        header('Location:manage_income.php');
-        exit(0);
+        if ($add_income_result["errormsg"] != '') {
+            $errormsg = $add_income_result["errormsg"];
+        } else {
+            header('Location: manage_income.php');
+            exit(0);
+        }
+    } elseif ($act == 'update') {
+        // Perform database update
+        $update_income_result = db_perform("sm_income_payment", $data, 'update', "pt_id=$id", '', '');
+
+        // Check if update was successful
+        if ($update_income_result["errormsg"] != '') {
+            $errormsg = $update_income_result["errormsg"];
+        } else {
+            // Redirect to manage income page after successful update
+            header('Location: manage_income.php');
+            exit(0);
+        }
     }
 }
 
-// Update user entry
-if ($act == 'update') {
-    $data = array();
-    $data["pt_voucher_no"] = $pt_voucher_no; // Include voucher number in data array
-    $data["pt_tran_bank"] = $pt_tran_bank;
-    $data["pt_tran_mode_of_payent"] = $pt_tran_mode_of_payent;
-    $data["pt_tran_u_type"] = $pt_tran_u_type; // Include transaction type in data array
-    $data["pt_tran_no"] = $pt_tran_no;
-    $data["pt_tran_amount"] = $pt_tran_amount;
-    $data["pt_stu_id"] = 0;
-    $data["pt_discount_amount"] = 0;
-    $data["pt_tran_date"] = disptoDB($pt_tran_date);
-    $data["pt_tran_remarks"] = $pt_tran_remarks;
-    $data["pt_sc_id"] = $pt_sc_id;
-    $data["pt_br_id"] = $pt_br_id;
-    $data["pt_create_date"] = $cur_date;
-    $data["pt_create_by_id"] = $tmp_admin_id;
-    $data["pt_update_date"] = $cur_date;
-    $data["pt_update_by_id"] = $tmp_admin_id;
-
-    $update_income_result = db_perform("sm_income_payment", $data, 'update', "pt_id=$id", '', '');
-
-    if ($update_income_result["errormsg"] != '') {
-        $errormsg = $update_income_result["errormsg"];
-    } else {
-        header('Location:manage_income.php');
-        exit(0);
-    }
-}
+$conn->close();
 ?>
+
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 
@@ -155,9 +242,9 @@ if ($act == 'update') {
                                     <div class="form-group">
                                         <label class="col-sm-3 control-label">Voucher Number</label>
                                             <div class="col-sm-6">
-                                             <input type="text" required id="pt_voucher_no" name="pt_voucher_no" value="<?php echo $pt_voucher_no; ?>" class="form-control" />
-                                            </div>
-                                        </div>
+                                             <input type="text"  id="voucherNumber" name="voucherNumber" value="<?php echo $pt_voucher_no; ?>" pattern="MA\d{4}" title="Please enter a voucher number in the format MA0000" class="form-control" />
+                                             </div>
+                                                </div>
                                         <div class="form-group">
                                             <label class="col-sm-3 control-label">Account</label>
                                             <div class="col-sm-9">
