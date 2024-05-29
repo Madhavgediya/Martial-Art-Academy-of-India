@@ -81,6 +81,7 @@ $pt_create_date = $cur_date;
 $pt_create_by_id = $tmp_admin_id;
 $pt_update_date = $cur_date;
 $pt_update_by_id = $tmp_admin_id;
+$pt_iet_id = ''; // Adding this line to initialize the type ID variable
 
 // Fetch existing data if editing
 if ($id != 0) {
@@ -104,6 +105,7 @@ if ($id != 0) {
         $pt_create_by_id = $row['pt_create_by_id'];
         $pt_update_date = $row['pt_update_date'];
         $pt_update_by_id = $row['pt_update_by_id'];
+        $pt_iet_id = $row['pt_iet_id']; // Fetching the type ID
     }
     $stmt->close();
 } else {
@@ -138,6 +140,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $pt_tran_amount = $_POST['pt_tran_amount'];
     $pt_tran_remarks = $_POST['pt_tran_remarks'];
     $pt_sc_id = $_POST['pt_sc_id'];
+    $pt_iet_id = $_POST['pt_iet_id']; // Capturing the type ID from POST
     $pt_br_id = $tmp_admin_id;
     $pt_create_date = $cur_date;
     $pt_create_by_id = $tmp_admin_id;
@@ -154,6 +157,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $data["pt_tran_date"] = disptoDB($pt_tran_date);
     $data["pt_tran_remarks"] = $pt_tran_remarks;
     $data["pt_sc_id"] = $pt_sc_id;
+    $data["pt_iet_id"] = $pt_iet_id; // Adding the type ID to the data array
     $data["pt_br_id"] = $pt_br_id;
     $data["pt_create_date"] = $pt_create_date;
     $data["pt_create_by_id"] = $pt_create_by_id;
