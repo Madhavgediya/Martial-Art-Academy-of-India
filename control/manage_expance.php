@@ -15,7 +15,10 @@ if (!$conn) {
 }
 
 // Query to fetch data from sm_expence_payment table
-$query = "SELECT * FROM sm_expance_payment";
+// $query = "SELECT * FROM sm_expance_payment";
+$query = "SELECT sm_expance_payment.*, sm_income_expance_type.iet_name 
+          FROM sm_expance_payment 
+          INNER JOIN sm_income_expance_type ON sm_expance_payment.pt_iet_id = sm_income_expance_type.iet_id";
 $result = mysqli_query($conn, $query);
 
 // Check if query executed successfully
@@ -232,6 +235,7 @@ if ($order == 'asc') {
                                             <th align="center" width="auto">Voucher No</th>
                                             <th align="center" width="auto">Remark</th>
                                             <th align="center" width="auto">Date</th>
+                                            <th align="center" width="auto">Category</th>
                                             <th align="center" width="auto">Mode</th>
                                             <th align="center" width="auto">Bank</th>
                                             <th align="center" width="auto">Txn. No</th>
@@ -267,7 +271,8 @@ if ($order == 'asc') {
 
                                                 <td style="padding-left:10px;">
                                                     <?php echo DBtoDisp($db_row['pt_tran_date']); ?></td>
-                                                <td style="padding-left:10px;">
+                                                    <td style="padding-left:10px;"><?php echo $db_row['iet_name']; ?></td>
+                                                    <td style="padding-left:10px;">
                                                     <?php echo $db_row['pt_tran_mode_of_payent']; ?></td>
                                                 <td style="padding-left:10px;"><?php echo $db_row['pt_tran_bank']; ?></td>
                                                 <td style="padding-left:10px;"><?php echo $db_row['pt_tran_no']; ?></td>

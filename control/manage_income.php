@@ -2,10 +2,6 @@
 include("includes/application_top.php");
 include("../includes/class/account.php");
 
-//echo '<pre>';
-//print_r($_REQUEST);
-//set Page Title
-
 // Database connection
 $conn = mysqli_connect("localhost", "root", "", "dbkkw4rfsaxdu5");
 
@@ -14,8 +10,10 @@ if (!$conn) {
     die("Connection failed: " . mysqli_connect_error());
 }
 
-// Query to fetch data from sm_expence_payment table
-$query = "SELECT * FROM sm_income_payment";
+// Query to fetch data with join on sm_income_expance_type to get the category name
+$query = "SELECT sm_income_payment.*, sm_income_expance_type.iet_name 
+          FROM sm_income_payment 
+          INNER JOIN sm_income_expance_type ON sm_income_payment.pt_iet_id = sm_income_expance_type.iet_id";
 $result = mysqli_query($conn, $query);
 
 // Check if query executed successfully
@@ -96,7 +94,7 @@ if ($pt_iet_id != '') {
 
 $condition .= " order by " . $order_by . ' ' . $order;
 $table = "  sm_income_payment INNER JOIN sm_account ON (ac_id=pt_sc_id) INNER JOIN sm_income_expance_type ON (pt_iet_id = iet_id) ";
-// echo "SELECT * FROM ".$table. " WHERE " .$condition;
+
 $pageObj = new PS_Pagination($table, '*', "$condition", $per_page, 10, "per_page=" . $per_page . "&pt_iet_id=" . $pt_iet_id . "&pt_sc_id=" . $pt_sc_id . "&pt_tran_remarks=" . $pt_tran_remarks . "&order by=" . $order_by . "&order=" . $order);
 $objData = $pageObj->paginate();
 $total_rows = $pageObj->totRows();
@@ -107,8 +105,8 @@ if ($order == 'asc') {
     $order = 'asc';
 }
 ?>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
+<!DOCTYPE html>
+<html>
 
 <head>
     <meta charset="UTF-8" />
@@ -123,7 +121,6 @@ if ($order == 'asc') {
         <?php include("includes/left_menu.php"); ?>
 
         <div class="content-wrapper">
-            <!-- Content Header (Page header) -->
             <section class="content-header">
                 <h1>
                     Manage income
@@ -134,18 +131,14 @@ if ($order == 'asc') {
                 </ol>
             </section>
 
-            <!-- Main content -->
             <section class="content">
                 <?php include("includes/messages.php"); ?>
-                <!-- Small boxes (Stat box) -->
                 <div class="row">
                     <div class="col-lg-12 col-xs-12">
                         <div class="box box-info">
                             <div class="box-header with-border">
                                 <h3 class="box-title">Search</h3>
                             </div>
-                            <!-- /.box-header -->
-                            <!-- form start -->
                             <form class="form-horizontal" name="form1" id="form1" method="post" onsubmit="return validate_add_edit_form();">
                                 <input type="hidden" name="act" id="act">
                                 <input type="hidden" value="0" name="id" id="id">
@@ -210,12 +203,12 @@ if ($order == 'asc') {
                                         </div>
 
                                     </div>
-                                </div><!-- /.box-body -->
+                                </div>
                                 <div class="box-footer">
                                     <button type="submit" class="btn btn-info">Search</button>
                                     <button type="button" class="btn btn-default" onclick="window.location.href = 'manage_income.php'">Cancel</button>
                                     <button type="button" style="float:right;" class="btn btn-success" onclick="window.location.href='<?php echo $page_open; ?>'">ADD</button>
-                                </div><!-- /.box-footer -->
+                                </div>
                             </form>
                         </div>
 
@@ -232,6 +225,7 @@ if ($order == 'asc') {
                                             <th align="center" width="auto">Voucher No</th>
                                             <th align="center" width="auto">Remark</th>
                                             <th align="center" width="auto">Date</th>
+                                            <th align="center" width="auto">Category</th>
                                             <th align="center" width="auto">Mode</th>
                                             <th align="center" width="auto">Bank</th>
                                             <th align="center" width="auto">Txn. No</th>
@@ -246,40 +240,23 @@ if ($order == 'asc') {
                                     </thead>
                                     <tbody>
                                         <?php
-                                        // $class = '';
-                                        // if ($objData) {
-                                        //     for ($i = 1; $db_row = $objData->fetch(); $i++) {
-                                        //         $srNo++;
-                                        //         if ($i % 2 == 0) {
-                                        //             $class = 'even';
-                                        //         } else {
-                                        //             $class = 'odd';
-                                        //         }
-
                                         while ($db_row = mysqli_fetch_assoc($result)) {
                                         ?>
-                                            <tr class="<?php echo $class; ?>">
-                                                <td>
-                                                    <center><?php echo $db_row['pt_id']; ?></center>
-                                                </td>
+                                            <tr>
+                                                <td><center><?php echo $db_row['pt_id']; ?></center></td>
                                                 <td style="padding-left:10px;"><?php echo $db_row['pt_voucher_no']; ?></td>
                                                 <td style="padding-left:10px;"><?php echo $db_row['pt_tran_remarks']; ?></td>
-
-                                                <td style="padding-left:10px;">
-                                                    <?php echo DBtoDisp($db_row['pt_tran_date']); ?></td>
-                                                <td style="padding-left:10px;">
-                                                    <?php echo $db_row['pt_tran_mode_of_payent']; ?></td>
+                                                <td style="padding-left:10px;"><?php echo DBtoDisp($db_row['pt_tran_date']); ?></td>
+                                                <td style="padding-left:10px;"><?php echo $db_row['iet_name']; ?></td>
+                                                <td style="padding-left:10px;"><?php echo $db_row['pt_tran_mode_of_payent']; ?></td>
                                                 <td style="padding-left:10px;"><?php echo $db_row['pt_tran_bank']; ?></td>
                                                 <td style="padding-left:10px;"><?php echo $db_row['pt_tran_no']; ?></td>
                                                 <td style="padding-left:10px;"><?php echo $db_row['pt_tran_amount']; ?></td>
-
-
                                                 <td style="padding-left:10px;">
-                                                    <center><a href="add_edit_income.php?id=<?php echo $db_row['pt_id']; ?>&per_page=<?php echo $per_page; ?>" class="text-success glyphicon glyphicon-pencil"></a>&nbsp;
+                                                    <center>
+                                                        <a href="add_edit_income.php?id=<?php echo $db_row['pt_id']; ?>&per_page=<?php echo $per_page; ?>" class="text-success glyphicon glyphicon-pencil"></a>&nbsp;
                                                         <a href="javascript:void(0);" data-toggle="modal" data-target="#ConfirmDelete" class="text-danger glyphicon glyphicon-remove" onclick="delete_record(<?php echo $db_row['pt_id']; ?>,'Income')"></a>
-
                                                         <a href="javascript:void(0);" class="text-success fa fa-fw fa-print" onclick="print_fee_receipt('Income',<?php echo $db_row['pt_id']; ?>,0)"></a>
-
                                                     </center>
                                                 </td>
                                             </tr>
